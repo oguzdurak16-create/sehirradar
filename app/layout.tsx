@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import "./globals.css";
 import "./enhancements.css";
+import "./editorial-theme.css";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sehirradar.example").replace(/\/$/, "");
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -10,7 +11,7 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#061b15",
+  themeColor: "#f2e5d4",
 };
 
 export const metadata: Metadata = {
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
     locale: "tr_TR",
     siteName: "Şehir Radar",
     title: "Şehir Radar",
-    description: "Şehrinde bugün ne oluyor?",
+    description: "Bursa'nın bugünü, tek bakışta.",
     url: siteUrl,
   },
   twitter: {
