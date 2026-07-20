@@ -1,0 +1,66 @@
+name: GitHub Pages yedek deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_PAGES: "true"
+      NEXT_PUBLIC_SITE_URL: "https://oguzdurak16-create.github.io/sehirradar"
+      NEXT_PUBLIC_BASE_PATH: "/sehirradar"
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Pages için dinamik API'yi statikleştir
+        run: |
+          rm -rf app/api/v1/items
+          mkdir -p app/api/v1/items
+          cat > app/api/v1/items/route.ts <<'EOF'
+          import { data, sortItems } from "@/lib/data";
+          export const dynamic = "force-static";
+          export function GET() {
+            const items = sortItems(data.items);
+            return Response.json({ generatedAt: data.generatedAt, city: data.city, count: items.length, items }, { headers: { "Access-Control-Allow-Origin": "*" } });
+          }
+          EOF
+          rm -f app/opengraph-image.tsx
+
+      - name: Veriyi doğrula
+        run: npm run validate:data
+
+      - name: Statik siteyi üret
+        run: npm run build
+
+      - name: Jekyll işlemesini kapat
+        run: touch out/.nojekyll
+
+      - name: gh-pages dalına yayınla
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "deploy: ${{ github.sha }}"
