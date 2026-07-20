@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - "scripts/ingest.mjs"
+      - "scripts/normalize-content.mjs"
       - "scripts/ensure-unique-slugs.mjs"
       - ".github/workflows/hourly-ingest.yml"
 
