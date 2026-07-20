@@ -1,0 +1,4 @@
+import { data, categoryPath } from "@/lib/data";
+export const dynamic = "force-static";
+function esc(v:string){return v.replace(/[<>&'\"]/g,(c)=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'\"':"&quot;"}[c] as string));}
+export function GET(){const site=process.env.NEXT_PUBLIC_SITE_URL??"https://sehirradar.example";const items=data.items.slice(0,30).map(i=>`<item><title>${esc(i.title)}</title><link>${site}${categoryPath(i)}</link><guid>${site}${categoryPath(i)}</guid><description>${esc(i.summary)}</description><pubDate>${new Date(i.updatedAt).toUTCString()}</pubDate></item>`).join("");const xml=`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Şehir Radar</title><link>${site}</link><description>Bursa kesinti, başvuru ve etkinlikleri</description><language>tr-TR</language>${items}</channel></rss>`;return new Response(xml,{headers:{"Content-Type":"application/rss+xml; charset=utf-8","Cache-Control":"public, max-age=3600"}});}
