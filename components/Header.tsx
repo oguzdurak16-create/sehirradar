@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { CalendarDays, CircleHelp, FileCheck2, Menu, Siren } from "lucide-react";
+import { CalendarCheck2, CalendarDays, CircleHelp, FileCheck2, Menu, Siren } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const links = [
+  { href: "/bugun", label: "Bugün", icon: CalendarCheck2 },
   { href: "/kesintiler", label: "Kesintiler", icon: Siren },
   { href: "/basvurular", label: "Başvurular", icon: FileCheck2 },
   { href: "/etkinlikler", label: "Etkinlikler", icon: CalendarDays },

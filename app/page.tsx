@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays, CheckCircle2, FileCheck2, MapPin, RadioTower, Search, Siren } from "lucide-react";
-import { data, getItems } from "@/lib/data";
+import { BURSA_DISTRICTS, data, getActiveItems, getItems } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import { ItemCard } from "@/components/ItemCard";
 
 export default function Home() {
-  const outages = getItems("outage").filter((x) => x.status !== "ended");
-  const applications = getItems("application").filter((x) => x.status !== "ended");
-  const events = getItems("event").filter((x) => x.status !== "ended");
-  const featured = [...outages, ...applications, ...events].slice(0, 6);
+  const outages = getItems("outage").filter((item) => item.status !== "ended");
+  const applications = getItems("application").filter((item) => item.status !== "ended");
+  const events = getItems("event").filter((item) => item.status !== "ended");
+  const featured = getActiveItems().slice(0, 6);
 
   return (
     <main>
@@ -18,7 +18,7 @@ export default function Home() {
             <span className="livePill"><i /> Bursa verileri izleniyor</span>
             <h1>Şehrinde bugün<br/><em>ne oluyor?</em></h1>
             <p>Kesintileri, açık başvuruları ve ücretsiz etkinlikleri farklı kurum sitelerinde arama. Şehir Radar resmî bilgiyi tek ekranda toplar.</p>
-            <div className="heroActions"><Link className="primaryButton" href="/kesintiler">Bugünü kontrol et <ArrowRight size={18} /></Link><Link className="ghostButton" href="/hakkinda">Nasıl çalışıyor?</Link></div>
+            <div className="heroActions"><Link className="primaryButton" href="/bugun">Bugünü kontrol et <ArrowRight size={18} /></Link><Link className="ghostButton" href="/hakkinda">Nasıl çalışıyor?</Link></div>
             <div className="trustRow"><CheckCircle2 size={16}/> Yalnızca resmî kaynaklar <span/> <CheckCircle2 size={16}/> Saatlik veri kontrolü</div>
           </div>
           <div className="radarPanel" aria-hidden="true">
@@ -38,13 +38,24 @@ export default function Home() {
       </section>
 
       <section className="homeSection">
-        <div className="sectionHeading"><div><span className="eyebrow">Şehir akışı</span><h2>Şu an bilmen gerekenler</h2></div><Link href="/kesintiler">Tüm kayıtlar <ArrowRight size={17}/></Link></div>
-        <div className="cardGrid">{featured.map((item) => <ItemCard item={item} key={item.id}/>)}</div>
+        <div className="sectionHeading"><div><span className="eyebrow">Şehir akışı</span><h2>Şu an bilmen gerekenler</h2></div><Link href="/bugun">Bugünün tamamı <ArrowRight size={17}/></Link></div>
+        {featured.length ? <div className="cardGrid">{featured.map((item) => <ItemCard item={item} key={item.id}/>)}</div> : <div className="emptyState"><strong>Şu anda aktif kayıt yok.</strong><p>Veriler saatlik olarak yeniden kontrol ediliyor.</p></div>}
+      </section>
+
+      <section className="districtSection">
+        <div className="sectionHeading"><div><span className="eyebrow">İlçe sayfaları</span><h2>Bursa&apos;yı ilçe ilçe takip et</h2></div></div>
+        <div className="districtGrid">
+          {BURSA_DISTRICTS.map((district) => (
+            <Link href={`/bursa/${district.slug}`} key={district.slug}>
+              <MapPin size={16} /><span>{district.name}</span><ArrowRight size={15}/>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="searchBanner">
         <div><MapPin/><span><small>Mahallene göre filtrele</small><h2>İhtiyacın olan bilgiyi saniyeler içinde bul.</h2></span></div>
-        <Link href="/kesintiler"><Search/> Radarı aç</Link>
+        <Link href="/bugun"><Search/> Radarı aç</Link>
       </section>
     </main>
   );
