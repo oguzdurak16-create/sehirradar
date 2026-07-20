@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs><radialGradient id="g" cx="70%" cy="50%"><stop offset="0" stop-color="#28d17c" stop-opacity=".3"/><stop offset="1" stop-color="#071a16" stop-opacity="0"/></radialGradient></defs>
+<rect width="1200" height="630" fill="#061712"/><rect width="1200" height="630" fill="url(#g)"/>
+<circle cx="870" cy="315" r="190" fill="none" stroke="#2b7f62" stroke-width="2"/><circle cx="870" cy="315" r="130" fill="none" stroke="#2b7f62" stroke-width="2"/><circle cx="870" cy="315" r="70" fill="none" stroke="#2b7f62" stroke-width="2"/><path d="M870 315 L1035 215 A190 190 0 0 1 1058 366 Z" fill="#30dc88" opacity=".35"/>
+<circle cx="936" cy="285" r="8" fill="#45ee99"/><circle cx="798" cy="368" r="6" fill="#45ee99"/>
+<text x="90" y="250" font-family="Arial,sans-serif" font-size="92" font-weight="700" fill="#f4fff9">Şehir</text><text x="90" y="345" font-family="Arial,sans-serif" font-size="92" font-weight="700" fill="#44e28f">Radar</text><text x="94" y="420" font-family="Arial,sans-serif" font-size="30" fill="#b2c9be">Kesintiler · Başvurular · Etkinlikler</text>
+</svg>
