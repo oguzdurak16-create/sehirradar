@@ -11,6 +11,7 @@ export default function Home() {
   const events = getItems("event").filter((item) => item.status !== "ended");
   const featured = getActiveItems().slice(0, 6);
   const heroItem = featured[0];
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
   return (
     <main className="editorialHome">
@@ -32,7 +33,7 @@ export default function Home() {
           </div>
 
           <div className="editorialVisual">
-            <Image className="editorialPanorama" src="/bursa-panorama.svg" alt="Uludağ, Bursa çatıları ve tarihi şehir siluetinden oluşan özgün illüstrasyon" fill priority sizes="(max-width: 980px) 100vw, 46vw" />
+            <Image className="editorialPanorama" src={`${basePath}/bursa-panorama.svg`} alt="Uludağ, Bursa çatıları ve tarihi şehir siluetinden oluşan özgün illüstrasyon" fill priority sizes="(max-width: 980px) 100vw, 46vw" />
             <div className="editorialStamp"><span><b>{featured.length}</b>aktif kayıt</span></div>
             <div className="editorialCaption">
               <span>
