@@ -2,6 +2,11 @@
 
 Bursa ile başlayan otomatik şehir bilgi platformu. Resmî kaynaklardan kesinti, başvuru ve etkinlik bilgisi toplar; özgün ve yapılandırılmış içerik olarak yayımlar.
 
+## Canlı yayın
+
+- GitHub Pages yedeği: `https://oguzdurak16-create.github.io/sehirradar/`
+- Vercel kotası açıldığında aynı `main` dalı Vercel üzerinde de çalışır.
+
 ## Özellikler
 
 - Modern mobil/masaüstü arayüz
@@ -11,6 +16,7 @@ Bursa ile başlayan otomatik şehir bilgi platformu. Resmî kaynaklardan kesinti
 - Riskli içerikleri otomatik olarak `reviewQueue` alanına ayırma
 - Sitemap, robots.txt, RSS ve Schema.org verisi
 - Vercel uyumlu Next.js 16 projesi
+- GitHub Pages için otomatik statik yedek deploy
 - Görsel kopyalamaz; tasarım içi özgün grafikler kullanır
 
 ## Kurulum
