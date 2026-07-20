@@ -1,6 +1,67 @@
 {
-  "generatedAt": "2026-07-20T12:00:00.000Z",
+  "generatedAt": "2026-07-20T13:13:41.855Z",
   "totalSources": 6,
-  "healthySources": 0,
-  "sources": []
+  "healthySources": 5,
+  "sources": [
+    {
+      "name": "Bursa Büyükşehir Belediyesi duyuruları",
+      "sourceName": "Bursa Büyükşehir Belediyesi",
+      "url": "https://bapi.bursa.bel.tr/apigateway/acikveri/duyuru",
+      "ok": true,
+      "count": 1,
+      "durationMs": 1150,
+      "checkedAt": "2026-07-20T13:13:41.855Z",
+      "error": null
+    },
+    {
+      "name": "Bursa Büyükşehir Belediyesi etkinlikleri",
+      "sourceName": "Bursa Büyükşehir Belediyesi",
+      "url": "https://www.bursa.bel.tr/etkinlik",
+      "ok": true,
+      "count": 10,
+      "durationMs": 1203,
+      "checkedAt": "2026-07-20T13:13:41.855Z",
+      "error": null
+    },
+    {
+      "name": "BUSKİ su kesintileri",
+      "sourceName": "BUSKİ",
+      "url": "https://www.buski.gov.tr/gunluk-su-kesintileri",
+      "ok": false,
+      "count": 0,
+      "durationMs": 4005,
+      "checkedAt": "2026-07-20T13:13:41.855Z",
+      "error": "fetch failed"
+    },
+    {
+      "name": "UEDAŞ elektrik kesintileri",
+      "sourceName": "UEDAŞ",
+      "url": "https://www.uedas.com.tr/tr/kesintiler",
+      "ok": true,
+      "count": 0,
+      "durationMs": 1582,
+      "checkedAt": "2026-07-20T13:13:41.855Z",
+      "error": null
+    },
+    {
+      "name": "BURULAŞ ulaşım duyuruları",
+      "sourceName": "BURULAŞ",
+      "url": "https://www.burulas.com.tr/",
+      "ok": true,
+      "count": 4,
+      "durationMs": 1343,
+      "checkedAt": "2026-07-20T13:13:41.855Z",
+      "error": null
+    },
+    {
+      "name": "Bursa Valiliği duyuruları",
+      "sourceName": "T.C. Bursa Valiliği",
+      "url": "https://www.bursa.gov.tr/",
+      "ok": true,
+      "count": 0,
+      "durationMs": 2545,
+      "checkedAt": "2026-07-20T13:13:41.855Z",
+      "error": null
+    }
+  ]
 }
