@@ -3,58 +3,432 @@ import path from "node:path";
 import crypto from "node:crypto";
 import * as cheerio from "cheerio";
 
-const ROOT=process.cwd();
-const DATA_FILE=path.join(ROOT,"data/content.json");
-const TIMEOUT=Number(process.env.INGEST_TIMEOUT_MS||20000);
-const NOW=new Date();
-const nowIso=NOW.toISOString();
-const UA="SehirRadarBot/1.0 (+public city information aggregator; contact via site)";
+const ROOT = process.cwd();
+const DATA_FILE = path.join(ROOT, "data/content.json");
+const HEALTH_FILE = path.join(ROOT, "data/source-health.json");
+const TIMEOUT = Number(process.env.INGEST_TIMEOUT_MS || 25000);
+const RETRIES = Number(process.env.INGEST_RETRIES || 3);
+const NOW = new Date();
+const nowIso = NOW.toISOString();
+const UA = "SehirRadarBot/1.2 (+official public city information aggregator; contact via site)";
 
-const SOURCES={
-  bursaApi:"https://bapi.bursa.bel.tr/apigateway/acikveri/duyuru",
-  bursaEvents:"https://www.bursa.bel.tr/etkinlik",
-  buski:"https://www.buski.gov.tr/gunluk-su-kesintileri",
-  uedas:"https://www.uedas.com.tr/tr/kesintiler",
-  burulas:"https://www.burulas.com.tr/"
+const DISTRICTS = [
+  "Nilüfer", "Osmangazi", "Yıldırım", "Mudanya", "Gemlik", "İnegöl",
+  "Mustafakemalpaşa", "Karacabey", "Gürsu", "Kestel", "Orhangazi",
+  "İznik", "Yenişehir", "Keles", "Orhaneli", "Büyükorhan", "Harmancık",
+];
+const DISTRICT_PATTERN = DISTRICTS.map((district) => district.toLocaleUpperCase("tr-TR")).join("|");
+const MONTHS = {
+  ocak: 1, şubat: 2, mart: 3, nisan: 4, mayıs: 5, haziran: 6,
+  temmuz: 7, ağustos: 8, eylül: 9, ekim: 10, kasım: 11, aralık: 12,
 };
-const risky=/\b(cinayet|ölüm|öldü|yaralı|kaza|şüpheli|gözaltı|tutuk|tecavüz|istismar|sağlık verisi|hasta kimliği|intihar|silah|uyuşturucu|siyasi suçlama|başkan suçladı)\b/i;
-const application=/\b(başvuru|destek|kurs|kayıt|burs|yardım|hibe|personel alımı|staj)\b/i;
-const event=/\b(etkinlik|konser|tiyatro|sergi|festival|şenlik|atölye|söyleşi|sinema)\b/i;
-const transport=/\b(sefer|güzergah|güzergâh|ulaşım|otobüs|metro|tramvay|BursaRay|BUDO)\b/i;
 
-function slugify(v){return v.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/ğ/g,"g").replace(/ü/g,"u").replace(/ş/g,"s").replace(/ö/g,"o").replace(/ç/g,"c").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,100)}
-function clean(v=""){return String(v).replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/\s+/g," ").trim()}
-function hash(v){return crypto.createHash("sha1").update(v).digest("hex").slice(0,12)}
-function sentence(text,max=260){const t=clean(text);if(t.length<=max)return t;const cut=t.slice(0,max);return cut.slice(0,Math.max(cut.lastIndexOf("."),cut.lastIndexOf(" ")))+"…"}
-function districtFrom(text){const districts=["Nilüfer","Osmangazi","Yıldırım","Mudanya","Gemlik","İnegöl","Mustafakemalpaşa","Karacabey","Gürsu","Kestel","Orhangazi","İznik","Yenişehir","Keles","Orhaneli","Büyükorhan","Harmancık"];return districts.find(d=>text.toLocaleLowerCase("tr-TR").includes(d.toLocaleLowerCase("tr-TR")))||"Bursa"}
-function parseTrDate(text){const m=text.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](20\d{2})(?:\s+(\d{1,2})[:.](\d{2}))?/);if(!m)return null;const [,d,mo,y,h="09",mi="00"]=m;return `${y}-${mo.padStart(2,"0")}-${d.padStart(2,"0")}T${h.padStart(2,"0")}:${mi}:00+03:00`}
-async function fetchText(url){const c=new AbortController();const timer=setTimeout(()=>c.abort(),TIMEOUT);try{const r=await fetch(url,{headers:{"user-agent":UA,"accept":"text/html,application/json"},signal:c.signal});if(!r.ok)throw new Error(`${r.status} ${r.statusText}`);return {text:await r.text(),type:r.headers.get("content-type")||""}}finally{clearTimeout(timer)}}
-function classify(title,body=""){const t=`${title} ${body}`;if(/su kesint/i.test(t))return ["outage","water"];if(/elektrik kesint|enerji verilemeyecek/i.test(t))return ["outage","electricity"];if(transport.test(t))return ["transport","transport"];if(application.test(t))return ["application","social-support"];if(event.test(t))return ["event",/sergi/i.test(t)?"exhibition":/festival|şenlik/i.test(t)?"festival":"event"];return [null,null]}
-function normalizeItem({title,body,url,sourceName,publishedAt,start,end,type,subtype,district}){title=clean(title);body=clean(body);if(!title||title.length<7)return null;const c=type?[type,subtype]:classify(title,body);if(!c[0])return null;const risk=risky.test(`${title} ${body}`)?"review":"low";const id=`${slugify(sourceName)}-${hash(url+title)}`;return {id,slug:slugify(title)||id,type:c[0],subtype:c[1]||"general",title:sentence(title,120),summary:sentence(body||title,260),body:sentence(body||title,700),district:district||districtFrom(`${title} ${body}`),neighborhoods:[],startsAt:start||parseTrDate(body)||parseTrDate(title),endsAt:end||null,status:c[0]==="application"?"open":c[0]==="event"?"active":"planned",sourceName,sourceUrl:url,sourcePublishedAt:publishedAt||null,updatedAt:nowIso,risk,isFree:/ücretsiz/i.test(`${title} ${body}`)?true:null,tags:Array.from(new Set([c[1],districtFrom(`${title} ${body}`),sourceName])).filter(Boolean)} }
-function flattenJson(value,out=[]){if(Array.isArray(value)){for(const x of value)flattenJson(x,out)}else if(value&&typeof value==="object"){const keys=Object.keys(value).map(k=>k.toLocaleLowerCase("tr-TR"));if(keys.some(k=>/baslik|başlık|title|duyuruadi|ad/.test(k)))out.push(value);else for(const x of Object.values(value))flattenJson(x,out)}return out}
-function pick(obj,patterns){for(const [k,v] of Object.entries(obj)){const key=k.toLocaleLowerCase("tr-TR");if(patterns.some(p=>key.includes(p))&&v!=null)return String(v)}return ""}
-async function ingestBursaApi(){const {text}=await fetchText(SOURCES.bursaApi);const json=JSON.parse(text);return flattenJson(json).map(r=>{const title=pick(r,["baslik","başlık","title","duyuruadi","adi"]);const body=pick(r,["aciklama","açıklama","icerik","içerik","description","ozet","özet"]);let url=pick(r,["url","link"]);if(url&&!url.startsWith("http"))url=`https://www.bursa.bel.tr${url.startsWith("/")?"":"/"}${url}`;return normalizeItem({title,body,url:url||SOURCES.bursaApi,sourceName:"Bursa Büyükşehir Belediyesi",publishedAt:pick(r,["tarih","date"])||null})}).filter(Boolean)}
-async function ingestEventHtml(){const {text}=await fetchText(SOURCES.bursaEvents);const $=cheerio.load(text);const results=[];$("a[href*='/etkinlik/']").each((_,a)=>{const el=$(a);const href=el.attr("href");const block=el.closest("article,li,.item,.card,.event,.etkinlik").length?el.closest("article,li,.item,.card,.event,.etkinlik"):el.parent();const title=clean(el.find("h1,h2,h3,h4,h5").first().text()||el.attr("title")||el.text());const body=clean(block.text());if(title.length>6){const url=new URL(href,SOURCES.bursaEvents).href;const item=normalizeItem({title,body,url,sourceName:"Bursa Büyükşehir Belediyesi",type:"event",subtype:/sergi/i.test(body)?"exhibition":/festival|şenlik/i.test(body)?"festival":"event"});if(item)results.push(item)}});return results}
-async function ingestBuski(){const {text}=await fetchText(SOURCES.buski);const $=cheerio.load(text);const body=clean($("body").text());const chunks=body.split(/(?=(?:NİLÜFER|OSMANGAZİ|YILDIRIM|MUSTAFAKEMALPAŞA|İNEGÖL|GEMLİK|MUDANYA|GÜRSU|KESTEL|KARACABEY|ORHANGAZİ|İZNİK|YENİŞEHİR)\b)/i).filter(x=>/kesinti/i.test(x));return chunks.slice(0,40).map(chunk=>normalizeItem({title:`${districtFrom(chunk)} su kesintisi`,body:chunk,url:SOURCES.buski,sourceName:"BUSKİ",type:"outage",subtype:"water",district:districtFrom(chunk)})).filter(Boolean)}
-async function ingestUedas(){const {text}=await fetchText(SOURCES.uedas);const $=cheerio.load(text);const body=clean($("body").text());const matches=body.match(/\d{1,2}\s+[A-Za-zÇĞİÖŞÜçğıöşü]+[^.]{20,260}enerji verilemeyecektir/gi)||[];return matches.map(chunk=>normalizeItem({title:`${districtFrom(chunk)} planlı elektrik kesintisi`,body:chunk,url:SOURCES.uedas,sourceName:"UEDAŞ",type:"outage",subtype:"electricity",district:districtFrom(chunk)})).filter(Boolean)}
-async function ingestBurulas(){const {text}=await fetchText(SOURCES.burulas);const $=cheerio.load(text);const results=[];$("a").each((_,a)=>{const el=$(a);const block=el.closest("article,li,.card,.item").length?el.closest("article,li,.card,.item"):el.parent();const body=clean(block.text());if(body.length>25&&transport.test(body)){const title=sentence(clean(el.text())||body,120);const href=el.attr("href")||SOURCES.burulas;const item=normalizeItem({title,body,url:new URL(href,SOURCES.burulas).href,sourceName:"BURULAŞ",type:"transport",subtype:"transport"});if(item)results.push(item)}});return results}
-function unique(items){const map=new Map();for(const item of items){const key=`${item.type}|${slugify(item.title)}|${item.district}`;const old=map.get(key);if(!old||item.body.length>old.body.length)map.set(key,item)}return [...map.values()]}
-function carryStatus(item){if(item.endsAt&&new Date(item.endsAt)<NOW)return {...item,status:"ended"};return item}
-async function main(){const old=JSON.parse(await fs.readFile(DATA_FILE,"utf8"));const jobs=[["Bursa açık veri",ingestBursaApi],["Bursa etkinlik",ingestEventHtml],["BUSKİ",ingestBuski],["UEDAŞ",ingestUedas],["BURULAŞ",ingestBurulas]];const collected=[];for(const [name,fn] of jobs){try{const items=await fn();console.log(`${name}: ${items.length}`);collected.push(...items)}catch(e){console.error(`${name} başarısız:`,e.message)}}
-  const fresh=unique(collected).map(carryStatus);
-  const oldMap=new Map(old.items.map(i=>[i.id,i]));
-  const refreshed=fresh.map(i=>oldMap.has(i.id)?{...oldMap.get(i.id),...i}:i);
-  const freshIds=new Set(refreshed.map(i=>i.id));
-  const preserved=old.items.filter(i=>!freshIds.has(i.id)).map(carryStatus);
-  const merged=unique([...refreshed,...preserved]).filter(i=>{
-    if(i.status!=="ended") return true;
-    const anchor=i.endsAt||i.updatedAt;
-    return NOW.getTime()-new Date(anchor).getTime()<1000*60*60*24*90;
-  });
-  const published=merged.filter(i=>i.risk==="low");
-  const review=merged.filter(i=>i.risk==="review");
-  const output={generatedAt:nowIso,city:"Bursa",items:published,reviewQueue:review};
-  await fs.writeFile(DATA_FILE,JSON.stringify(output,null,2)+"\n");
-  console.log(`Tamamlandı: ${published.length} yayın, ${review.length} inceleme.`);
+const SOURCES = {
+  bursaApi: "https://bapi.bursa.bel.tr/apigateway/acikveri/duyuru",
+  bursaEvents: "https://www.bursa.bel.tr/etkinlik",
+  buski: "https://www.buski.gov.tr/gunluk-su-kesintileri",
+  uedas: ["https://www.uedas.com.tr/tr/kesintiler", "https://www.uedas.com.tr/tr/"],
+  burulas: "https://www.burulas.com.tr/",
+  bursaValilik: "https://www.bursa.gov.tr/",
+};
+
+const risky = /\b(cinayet|ölüm|öldü|yaralı|kaza|şüpheli|gözaltı|tutuk|tecavüz|istismar|sağlık verisi|hasta kimliği|intihar|silah|uyuşturucu|siyasi suçlama|başkan suçladı)\b/i;
+const application = /\b(başvuru|destek|kurs|kayıt|burs|yardım|hibe|personel alımı|staj|müzayede|ihale ilanı)\b/i;
+const event = /\b(etkinlik|konser|tiyatro|sergi|festival|şenlik|atölye|söyleşi|sinema|gösteri)\b/i;
+const transport = /\b(sefer|güzergah|güzergâh|ulaşım|otobüs|metro|tramvay|bursaray|budo|yol kapalı|trafik düzenlemesi)\b/i;
+
+function slugify(value) {
+  return value.toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i").replace(/ğ/g, "g").replace(/ü/g, "u")
+    .replace(/ş/g, "s").replace(/ö/g, "o").replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 100);
 }
-main().catch(e=>{console.error(e);process.exit(1)});
+function clean(value = "") {
+  return String(value).replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
+function cleanLines(value = "") {
+  return String(value).replace(/\r/g, "").split("\n").map((line) => clean(line)).filter(Boolean).join("\n");
+}
+function hash(value) {
+  return crypto.createHash("sha1").update(value).digest("hex").slice(0, 12);
+}
+function sentence(text, max = 260) {
+  const value = clean(text);
+  if (value.length <= max) return value;
+  const cut = value.slice(0, max);
+  const point = Math.max(cut.lastIndexOf("."), cut.lastIndexOf(" "));
+  return `${cut.slice(0, point > 40 ? point : max).trim()}…`;
+}
+function districtFrom(text) {
+  const normalized = text.toLocaleLowerCase("tr-TR");
+  return DISTRICTS.find((district) => normalized.includes(district.toLocaleLowerCase("tr-TR"))) || "Bursa";
+}
+function isoFromParts(year, month, day, hour = "09", minute = "00") {
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+03:00`;
+}
+function parseTrDate(text) {
+  const numeric = text.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](20\d{2})(?:\s+(\d{1,2})[:.](\d{2}))?/);
+  if (numeric) {
+    const [, day, month, year, hour = "09", minute = "00"] = numeric;
+    return isoFromParts(year, month, day, hour, minute);
+  }
+  const long = text.toLocaleLowerCase("tr-TR").match(/(\d{1,2})\s+(ocak|şubat|mart|nisan|mayıs|haziran|temmuz|ağustos|eylül|ekim|kasım|aralık)(?:\s+(20\d{2}))?(?:[^\d]{0,20}(\d{1,2})[:.](\d{2}))?/i);
+  if (!long) return null;
+  const [, day, monthName, year = String(NOW.getFullYear()), hour = "09", minute = "00"] = long;
+  return isoFromParts(year, MONTHS[monthName], day, hour, minute);
+}
+function parseDateRange(text) {
+  const numeric = [...text.matchAll(/(\d{1,2})[.\/-](\d{1,2})[.\/-](20\d{2})(?:\s+(\d{1,2})[:.](\d{2}))?/g)];
+  if (numeric.length) {
+    const toIso = (match) => isoFromParts(match[3], match[2], match[1], match[4] || "09", match[5] || "00");
+    return { start: toIso(numeric[0]), end: numeric[1] ? toIso(numeric[1]) : null };
+  }
+  const start = parseTrDate(text);
+  if (!start) return { start: null, end: null };
+  const times = [...text.matchAll(/(\d{1,2})[:.](\d{2})/g)];
+  if (times.length < 2) return { start, end: null };
+  const startDate = new Date(start);
+  const end = isoFromParts(startDate.getFullYear(), startDate.getMonth() + 1, startDate.getDate(), times[1][1], times[1][2]);
+  return { start, end };
+}
+function extractNeighborhoods(text) {
+  const names = new Set();
+  for (const match of text.matchAll(/([A-ZÇĞİÖŞÜa-zçğıöşü0-9][A-ZÇĞİÖŞÜa-zçğıöşü0-9\s'-]{1,45}?)\s+(?:Mahallesi|Mah\.|Mah\b)/gi)) {
+    const value = clean(match[1]).replace(/^(ili|ilçe|ilçesi|bursa)\s+/i, "");
+    if (value.length >= 2 && value.length <= 45) names.add(value);
+  }
+  return [...names].slice(0, 20);
+}
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function fetchText(url) {
+  let lastError;
+  for (let attempt = 1; attempt <= RETRIES; attempt += 1) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT);
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "user-agent": UA,
+          accept: "text/html,application/json;q=0.9,*/*;q=0.7",
+          "accept-language": "tr-TR,tr;q=0.9,en;q=0.6",
+          "cache-control": "no-cache",
+        },
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return { text: await response.text(), type: response.headers.get("content-type") || "", url };
+    } catch (error) {
+      lastError = error;
+      if (attempt < RETRIES) await sleep(700 * attempt);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastError;
+}
+async function fetchFirst(urls) {
+  let lastError;
+  for (const url of urls) {
+    try {
+      return await fetchText(url);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+function classify(title, body = "") {
+  const text = `${title} ${body}`;
+  if (/su kesint|içme suyu hattı|su verilemeyecek/i.test(text)) return ["outage", "water"];
+  if (/elektrik kesint|enerji verilemeyecek|planlı enerji/i.test(text)) return ["outage", "electricity"];
+  if (transport.test(text)) return ["transport", "transport"];
+  if (application.test(text)) return ["application", "social-support"];
+  if (event.test(text)) return ["event", /sergi/i.test(text) ? "exhibition" : /festival|şenlik/i.test(text) ? "festival" : /atölye/i.test(text) ? "workshop" : "event"];
+  return [null, null];
+}
+function normalizeItem({ title, body, url, sourceName, publishedAt, start, end, type, subtype, district, neighborhoods = [] }) {
+  const safeTitle = clean(title);
+  const safeBody = clean(body);
+  if (!safeTitle || safeTitle.length < 7 || !url) return null;
+  const classification = type ? [type, subtype] : classify(safeTitle, safeBody);
+  if (!classification[0]) return null;
+  const risk = risky.test(`${safeTitle} ${safeBody}`) ? "review" : "low";
+  const resolvedDistrict = district || districtFrom(`${safeTitle} ${safeBody}`);
+  const dates = { start: start || parseDateRange(`${safeTitle} ${safeBody}`).start, end: end || parseDateRange(`${safeTitle} ${safeBody}`).end };
+  let status = classification[0] === "application" ? "open" : classification[0] === "event" ? "active" : "planned";
+  if (dates.end && new Date(dates.end).getTime() < NOW.getTime()) status = "ended";
+  const id = `${slugify(sourceName)}-${hash(`${url}|${safeTitle}|${resolvedDistrict}`)}`;
+  return {
+    id,
+    slug: slugify(safeTitle) || id,
+    type: classification[0],
+    subtype: classification[1] || "general",
+    title: sentence(safeTitle, 120),
+    summary: sentence(safeBody || safeTitle, 260),
+    body: sentence(safeBody || safeTitle, 900),
+    district: resolvedDistrict,
+    neighborhoods: [...new Set([...neighborhoods, ...extractNeighborhoods(safeBody)])].filter(Boolean),
+    startsAt: dates.start,
+    endsAt: dates.end,
+    status,
+    sourceName,
+    sourceUrl: url,
+    sourcePublishedAt: publishedAt || null,
+    updatedAt: nowIso,
+    risk,
+    isFree: /ücretsiz|ücret alınmayacaktır/i.test(`${safeTitle} ${safeBody}`) ? true : null,
+    tags: [...new Set([classification[1], resolvedDistrict, sourceName, ...neighborhoods])].filter(Boolean),
+  };
+}
+function flattenJson(value, output = []) {
+  if (Array.isArray(value)) {
+    for (const item of value) flattenJson(item, output);
+  } else if (value && typeof value === "object") {
+    const keys = Object.keys(value).map((key) => key.toLocaleLowerCase("tr-TR"));
+    if (keys.some((key) => /baslik|başlık|title|duyuruadi|ad$/.test(key))) output.push(value);
+    else for (const child of Object.values(value)) flattenJson(child, output);
+  }
+  return output;
+}
+function pick(object, patterns) {
+  for (const [key, value] of Object.entries(object)) {
+    const normalized = key.toLocaleLowerCase("tr-TR");
+    if (patterns.some((pattern) => normalized.includes(pattern)) && value != null) return String(value);
+  }
+  return "";
+}
+async function ingestBursaApi() {
+  const { text } = await fetchText(SOURCES.bursaApi);
+  const json = JSON.parse(text);
+  return flattenJson(json).map((record) => {
+    const title = pick(record, ["baslik", "başlık", "title", "duyuruadi", "adi"]);
+    const body = pick(record, ["aciklama", "açıklama", "icerik", "içerik", "description", "ozet", "özet"]);
+    let url = pick(record, ["url", "link"]);
+    if (url && !url.startsWith("http")) url = `https://www.bursa.bel.tr${url.startsWith("/") ? "" : "/"}${url}`;
+    return normalizeItem({
+      title,
+      body,
+      url: url || SOURCES.bursaApi,
+      sourceName: "Bursa Büyükşehir Belediyesi",
+      publishedAt: parseTrDate(pick(record, ["tarih", "date"])) || null,
+    });
+  }).filter(Boolean);
+}
+async function ingestEventHtml() {
+  const { text } = await fetchText(SOURCES.bursaEvents);
+  const $ = cheerio.load(text);
+  const results = [];
+  const seen = new Set();
+  $("a[href*='/etkinlik/']").each((_, anchor) => {
+    const element = $(anchor);
+    const href = element.attr("href");
+    if (!href) return;
+    const block = element.closest("article,li,.item,.card,.event,.etkinlik").length ? element.closest("article,li,.item,.card,.event,.etkinlik") : element.parent();
+    const title = clean(element.find("h1,h2,h3,h4,h5").first().text() || element.attr("title") || element.text());
+    const body = clean(block.text());
+    const url = new URL(href, SOURCES.bursaEvents).href;
+    if (seen.has(url) || title.length < 7) return;
+    seen.add(url);
+    const range = parseDateRange(body);
+    const item = normalizeItem({ title, body, url, sourceName: "Bursa Büyükşehir Belediyesi", start: range.start, end: range.end, type: "event", subtype: /sergi/i.test(body) ? "exhibition" : /festival|şenlik/i.test(body) ? "festival" : /atölye/i.test(body) ? "workshop" : "event" });
+    if (item) results.push(item);
+  });
+  return results;
+}
+async function ingestBuski() {
+  const { text } = await fetchText(SOURCES.buski);
+  const $ = cheerio.load(text);
+  const body = cleanLines($("body").text());
+  const chunks = body.split(new RegExp(`(?=\\b(?:${DISTRICT_PATTERN})\\b)`, "giu")).filter((chunk) => /Planlanan Başlangıç Tarihi|kesinti|Kesildi/i.test(chunk));
+  const results = [];
+  for (const chunk of chunks.slice(0, 80)) {
+    const district = districtFrom(chunk);
+    const startMatch = chunk.match(/Planlanan Başlangıç Tarihi:\s*([^\n]+)/i);
+    const endMatch = chunk.match(/Planlanan Bitiş Tarihi:\s*([^\n]+)/i);
+    const descriptionMatch = chunk.match(/Açıklama:\s*([\s\S]+)/i);
+    const heading = chunk.split("\n").slice(0, 5).filter((line) => !/Kesildi|Planlanan|Kesim Tarihi/i.test(line));
+    const neighborhood = heading.find((line) => line.toLocaleUpperCase("tr-TR") !== district.toLocaleUpperCase("tr-TR") && line.length <= 50) || "";
+    const bodyText = clean(descriptionMatch?.[1] || chunk);
+    const item = normalizeItem({
+      title: `${district}${neighborhood ? ` ${neighborhood}` : ""} su kesintisi`,
+      body: bodyText,
+      url: SOURCES.buski,
+      sourceName: "BUSKİ",
+      start: startMatch ? parseTrDate(startMatch[1]) : null,
+      end: endMatch ? parseTrDate(endMatch[1]) : null,
+      type: "outage",
+      subtype: "water",
+      district,
+      neighborhoods: neighborhood ? [clean(neighborhood)] : [],
+    });
+    if (item) results.push(item);
+  }
+  return results;
+}
+async function ingestUedas() {
+  const { text, url } = await fetchFirst(SOURCES.uedas);
+  const $ = cheerio.load(text);
+  const body = clean($("body").text());
+  const matches = body.match(/\d{1,2}\s+[A-Za-zÇĞİÖŞÜçğıöşü]+(?:\s+20\d{2})?[^.]{0,120}\d{1,2}[:.]\d{2}\s*-\s*\d{1,2}[:.]\d{2}[^.]{20,850}?enerji verilemeyecektir\.?/gi) || [];
+  return matches.filter((chunk) => /BURSA/i.test(chunk)).slice(0, 100).map((chunk) => {
+    const district = districtFrom(chunk);
+    const date = parseTrDate(chunk);
+    const times = [...chunk.matchAll(/(\d{1,2})[:.](\d{2})/g)];
+    let end = null;
+    if (date && times.length >= 2) {
+      const parsed = new Date(date);
+      end = isoFromParts(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate(), times[1][1], times[1][2]);
+    }
+    return normalizeItem({
+      title: `${district} planlı elektrik kesintisi`,
+      body: chunk,
+      url,
+      sourceName: "UEDAŞ",
+      start: date,
+      end,
+      type: "outage",
+      subtype: "electricity",
+      district,
+      neighborhoods: extractNeighborhoods(chunk),
+    });
+  }).filter(Boolean);
+}
+async function ingestBurulas() {
+  const { text } = await fetchText(SOURCES.burulas);
+  const $ = cheerio.load(text);
+  const results = [];
+  const seen = new Set();
+  $("a").each((_, anchor) => {
+    const element = $(anchor);
+    const block = element.closest("article,li,.card,.item,.news,.duyuru").length ? element.closest("article,li,.card,.item,.news,.duyuru") : element.parent();
+    const body = clean(block.text());
+    if (body.length < 25 || !transport.test(body)) return;
+    const href = element.attr("href") || SOURCES.burulas;
+    const url = new URL(href, SOURCES.burulas).href;
+    if (seen.has(url)) return;
+    seen.add(url);
+    const title = sentence(clean(element.text()) || body, 120);
+    const item = normalizeItem({ title, body, url, sourceName: "BURULAŞ", type: "transport", subtype: "transport" });
+    if (item) results.push(item);
+  });
+  return results.slice(0, 60);
+}
+async function ingestBursaValilik() {
+  const { text } = await fetchText(SOURCES.bursaValilik);
+  const $ = cheerio.load(text);
+  const results = [];
+  const seen = new Set();
+  $("a[href]").each((_, anchor) => {
+    const element = $(anchor);
+    const title = clean(element.attr("title") || element.find("h2,h3,h4,h5,strong").first().text() || element.text());
+    if (title.length < 8 || !classify(title, title)[0]) return;
+    const href = element.attr("href");
+    if (!href || href.startsWith("javascript:")) return;
+    const url = new URL(href, SOURCES.bursaValilik).href;
+    if (seen.has(url) || !url.includes("bursa.gov.tr")) return;
+    seen.add(url);
+    const block = element.closest("article,li,.item,.card,.duyuru").length ? element.closest("article,li,.item,.card,.duyuru") : element.parent();
+    const body = clean(block.text()) || title;
+    const item = normalizeItem({ title, body, url, sourceName: "T.C. Bursa Valiliği", publishedAt: parseTrDate(body) });
+    if (item) results.push(item);
+  });
+  return results.slice(0, 50);
+}
+function unique(items) {
+  const map = new Map();
+  for (const item of items) {
+    const key = `${item.type}|${slugify(item.title)}|${item.district}`;
+    const previous = map.get(key);
+    if (!previous || item.body.length > previous.body.length) map.set(key, item);
+  }
+  return [...map.values()];
+}
+function carryStatus(item) {
+  if (item.endsAt && new Date(item.endsAt).getTime() < NOW.getTime()) return { ...item, status: "ended" };
+  return item;
+}
+function signature(item) {
+  const { updatedAt, ...stable } = item;
+  return JSON.stringify(stable);
+}
+function preserveDays(item) {
+  if (item.type === "application") return 30;
+  if (item.type === "event") return 10;
+  return 3;
+}
+async function writeJsonAtomic(file, value) {
+  const temp = `${file}.tmp`;
+  await fs.writeFile(temp, `${JSON.stringify(value, null, 2)}\n`);
+  await fs.rename(temp, file);
+}
+
+async function main() {
+  const old = JSON.parse(await fs.readFile(DATA_FILE, "utf8"));
+  const jobs = [
+    { name: "Bursa Büyükşehir Belediyesi duyuruları", sourceName: "Bursa Büyükşehir Belediyesi", url: SOURCES.bursaApi, run: ingestBursaApi },
+    { name: "Bursa Büyükşehir Belediyesi etkinlikleri", sourceName: "Bursa Büyükşehir Belediyesi", url: SOURCES.bursaEvents, run: ingestEventHtml },
+    { name: "BUSKİ su kesintileri", sourceName: "BUSKİ", url: SOURCES.buski, run: ingestBuski },
+    { name: "UEDAŞ elektrik kesintileri", sourceName: "UEDAŞ", url: SOURCES.uedas[0], run: ingestUedas },
+    { name: "BURULAŞ ulaşım duyuruları", sourceName: "BURULAŞ", url: SOURCES.burulas, run: ingestBurulas },
+    { name: "Bursa Valiliği duyuruları", sourceName: "T.C. Bursa Valiliği", url: SOURCES.bursaValilik, run: ingestBursaValilik },
+  ];
+
+  const collected = [];
+  const sourceHealth = [];
+  const successfulNames = new Set();
+  for (const job of jobs) {
+    const startedAt = Date.now();
+    try {
+      const items = await job.run();
+      collected.push(...items);
+      successfulNames.add(job.sourceName);
+      sourceHealth.push({ name: job.name, sourceName: job.sourceName, url: job.url, ok: true, count: items.length, durationMs: Date.now() - startedAt, checkedAt: nowIso, error: null });
+      console.log(`${job.name}: ${items.length}`);
+    } catch (error) {
+      sourceHealth.push({ name: job.name, sourceName: job.sourceName, url: job.url, ok: false, count: 0, durationMs: Date.now() - startedAt, checkedAt: nowIso, error: error instanceof Error ? error.message : String(error) });
+      console.error(`${job.name} başarısız:`, error instanceof Error ? error.message : error);
+    }
+  }
+
+  await writeJsonAtomic(HEALTH_FILE, {
+    generatedAt: nowIso,
+    totalSources: jobs.length,
+    healthySources: sourceHealth.filter((source) => source.ok).length,
+    sources: sourceHealth,
+  });
+
+  if (!successfulNames.size) throw new Error("Hiçbir resmî kaynak okunamadı; mevcut yayın verisi korunuyor.");
+
+  const fresh = unique(collected).map(carryStatus);
+  const oldMap = new Map(old.items.map((item) => [item.id, item]));
+  const refreshed = fresh.map((item) => {
+    const previous = oldMap.get(item.id);
+    if (!previous) return item;
+    return signature(previous) === signature(item) ? { ...item, updatedAt: previous.updatedAt } : item;
+  });
+  const freshIds = new Set(refreshed.map((item) => item.id));
+  const preserved = old.items.filter((item) => !freshIds.has(item.id)).flatMap((item) => {
+    if (!successfulNames.has(item.sourceName)) return [carryStatus(item)];
+    if (item.endsAt && new Date(item.endsAt).getTime() >= NOW.getTime()) return [carryStatus(item)];
+    const ageDays = (NOW.getTime() - new Date(item.updatedAt).getTime()) / 86400000;
+    if (ageDays <= preserveDays(item)) return [carryStatus(item)];
+    return [{ ...item, status: "ended" }];
+  });
+  const merged = unique([...refreshed, ...preserved]).filter((item) => {
+    if (item.status !== "ended") return true;
+    const anchor = item.endsAt || item.updatedAt;
+    return NOW.getTime() - new Date(anchor).getTime() < 86400000 * 60;
+  });
+  const published = merged.filter((item) => item.risk === "low");
+  const review = merged.filter((item) => item.risk === "review");
+  const output = { generatedAt: nowIso, city: "Bursa", items: published, reviewQueue: review };
+  await writeJsonAtomic(DATA_FILE, output);
+  console.log(`Tamamlandı: ${published.length} yayın, ${review.length} inceleme, ${successfulNames.size}/${jobs.length} kaynak başarılı.`);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
