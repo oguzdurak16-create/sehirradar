@@ -3,6 +3,8 @@ name: GitHub Pages yedek deploy
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -33,7 +35,7 @@ jobs:
       - name: Bağımlılıkları kur
         run: npm ci
 
-      - name: Pages için dinamik API'yi statikleştir
+      - name: Pages için sunucu rotalarını statikleştir
         run: |
           rm -rf app/api/v1/items
           mkdir -p app/api/v1/items
@@ -46,6 +48,19 @@ jobs:
           }
           EOF
           rm -f app/opengraph-image.tsx
+          python - <<'PY'
+          from pathlib import Path
+          for name in ["app/api/health/route.ts", "app/sitemap.ts", "app/robots.ts", "app/manifest.ts"]:
+              path = Path(name)
+              text = path.read_text()
+              if 'export const dynamic = "force-static";' not in text:
+                  path.write_text('export const dynamic = "force-static";\n' + text)
+          manifest = Path("app/manifest.ts")
+          text = manifest.read_text()
+          text = text.replace('start_url: "/bugun"', 'start_url: "/sehirradar/bugun"')
+          text = text.replace('scope: "/"', 'scope: "/sehirradar/"')
+          manifest.write_text(text)
+          PY
 
       - name: Veriyi doğrula
         run: npm run validate:data
