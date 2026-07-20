@@ -1,0 +1,3 @@
+import type { MetadataRoute } from "next";
+import { data, categoryPath } from "@/lib/data";
+export default function sitemap(): MetadataRoute.Sitemap {const site=process.env.NEXT_PUBLIC_SITE_URL??"https://sehirradar.example";const base=["","/kesintiler","/basvurular","/etkinlikler","/kaynaklar","/hakkinda"].map(url=>({url:`${site}${url}`,lastModified:new Date(data.generatedAt),changeFrequency:url===""?"hourly" as const:"daily" as const,priority:url===""?1:0.8}));return [...base,...data.items.map(item=>({url:`${site}${categoryPath(item)}`,lastModified:new Date(item.updatedAt),changeFrequency:"daily" as const,priority:0.7}))];}
