@@ -1,31 +1,34 @@
-name: GitHub Pages saatlik yayın
+name: Canlı şehir verisi ve GitHub Pages yayını
 
 on:
+  schedule:
+    - cron: "13,43 * * * *"
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_run:
-    workflows: ["Saatlik şehir verisi güncelleme"]
-    types: [completed]
-  workflow_dispatch:
+    paths-ignore:
+      - "data/**"
+      - "README.md"
 
 permissions:
   contents: write
 
 concurrency:
-  group: github-pages-deploy
-  cancel-in-progress: true
+  group: live-city-pipeline
+  cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+  ingest-build-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 22
     env:
       GITHUB_PAGES: "true"
       NEXT_PUBLIC_SITE_URL: "https://oguzdurak16-create.github.io/sehirradar"
       NEXT_PUBLIC_BASE_PATH: "/sehirradar"
+      INGEST_TIMEOUT_MS: "25000"
+      INGEST_RETRIES: "3"
     steps:
-      - name: Main dalındaki en güncel veriyi al
+      - name: Main dalını al
         uses: actions/checkout@v4
         with:
           ref: main
@@ -39,6 +42,12 @@ jobs:
 
       - name: Bağımlılıkları kur
         run: npm ci
+
+      - name: Resmî kaynakları tara ve veriyi hazırla
+        run: npm run ingest
+
+      - name: Veri yapısını doğrula
+        run: npm run validate:data
 
       - name: Pages için sunucu rotalarını statikleştir
         run: |
@@ -67,22 +76,23 @@ jobs:
           manifest.write_text(text)
           PY
 
-      - name: Veriyi doğrula
-        run: npm run validate:data
-
       - name: Statik siteyi üret
         run: npm run build
 
-      - name: Yayın zamanını kaydet
+      - name: Canlı veri ve yayın bilgisini ekle
         run: |
           touch out/.nojekyll
-          printf '{"publishedAt":"%s","source":"main"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > out/deployment-status.json
+          cp data/content.json out/live-data.json
+          cp data/source-health.json out/source-health.json
+          GENERATED_AT=$(node -e 'const d=require("./data/content.json");process.stdout.write(d.generatedAt)')
+          ITEM_COUNT=$(node -e 'const d=require("./data/content.json");process.stdout.write(String(d.items.length))')
+          printf '{"publishedAt":"%s","generatedAt":"%s","itemCount":%s,"source":"scheduled-live-pipeline","runId":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$GENERATED_AT" "$ITEM_COUNT" "${{ github.run_id }}" > out/deployment-status.json
 
-      - name: gh-pages dalına yayınla
+      - name: gh-pages dalına doğrudan yayınla
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./out
           publish_branch: gh-pages
           force_orphan: true
-          commit_message: "deploy: saatlik şehir verisi ${{ github.run_id }}"
+          commit_message: "deploy: canlı şehir verisi ${{ github.run_id }}"
