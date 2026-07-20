@@ -4,6 +4,12 @@ on:
   schedule:
     - cron: "8 * * * *"
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/ingest.mjs"
+      - "scripts/ensure-unique-slugs.mjs"
+      - ".github/workflows/hourly-ingest.yml"
 
 permissions:
   contents: write
