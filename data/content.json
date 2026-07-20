@@ -1,0 +1,117 @@
+{
+  "generatedAt": "2026-07-20T11:01:01.185Z",
+  "city": "Bursa",
+  "items": [
+    {
+      "id": "buski-mustafakemalpasa-temmuz-2026",
+      "slug": "mustafakemalpasa-planli-su-kesintisi-temmuz-2026",
+      "type": "outage",
+      "subtype": "water",
+      "title": "Mustafakemalpaşa’da planlı su kesintisi uyarısı",
+      "summary": "Cumhuriyet, Selimiye, Şeyhmüftü, Vıraca, Atatürk, Çırpan ve Hamidiye mahallelerinde çalışma nedeniyle gün içinde zaman zaman su kesintisi yaşanabilir.",
+      "body": "BUSKİ'nin resmî duyurusuna göre belirtilen mahallelerde içme suyu hatlarında yürütülen çalışmalar sırasında arıza oluşması hâlinde kesinti uygulanabilecek. Vatandaşların tedbirli olması öneriliyor.",
+      "district": "Mustafakemalpaşa",
+      "neighborhoods": [
+        "Cumhuriyet",
+        "Selimiye",
+        "Şeyhmüftü",
+        "Vıraca",
+        "Atatürk",
+        "Çırpan",
+        "Hamidiye"
+      ],
+      "startsAt": "2026-07-14T09:00:00+03:00",
+      "endsAt": "2026-07-18T18:00:00+03:00",
+      "status": "ended",
+      "sourceName": "BUSKİ",
+      "sourceUrl": "https://www.buski.gov.tr/gunluk-su-kesintileri",
+      "sourcePublishedAt": "2026-07-14T06:00:00+03:00",
+      "updatedAt": "2026-07-20T09:00:00.000Z",
+      "risk": "low",
+      "isFree": null,
+      "tags": [
+        "su kesintisi",
+        "BUSKİ",
+        "Mustafakemalpaşa"
+      ]
+    },
+    {
+      "id": "bursa-fetih-ilce-senlikleri-2026",
+      "slug": "bursa-fethin-700-yili-ilce-senlikleri",
+      "type": "event",
+      "subtype": "festival",
+      "title": "Bursa’nın Fethi’nin 700. yılı ilçe şenlikleri sürüyor",
+      "summary": "Bursa ilçelerinde çocuk etkinlikleri, atölyeler, gösteriler ve yerel üretici stantlarının yer aldığı şenlik programı ağustos sonuna kadar devam ediyor.",
+      "body": "Bursa Büyükşehir Belediyesi tarafından düzenlenen program farklı ilçelerde belirlenen tarihlerde gerçekleştiriliyor. Kesin tarih ve konum için resmî etkinlik sayfasının kontrol edilmesi gerekiyor.",
+      "district": "Bursa",
+      "neighborhoods": [],
+      "startsAt": "2026-07-03T10:00:00+03:00",
+      "endsAt": "2026-08-29T22:00:00+03:00",
+      "status": "active",
+      "sourceName": "Bursa Büyükşehir Belediyesi",
+      "sourceUrl": "https://www.bursa.bel.tr/etkinlik",
+      "sourcePublishedAt": "2026-07-03T07:00:00+03:00",
+      "updatedAt": "2026-07-20T09:00:00.000Z",
+      "risk": "low",
+      "isFree": true,
+      "tags": [
+        "ücretsiz etkinlik",
+        "çocuk etkinliği",
+        "festival"
+      ]
+    },
+    {
+      "id": "bursa-anne-kart",
+      "slug": "bursa-anne-kart-ulasim-destegi-basvurusu",
+      "type": "application",
+      "subtype": "social-support",
+      "title": "0-4 yaş çocuğu olan anneler için Anne Kart başvurusu",
+      "summary": "Bursa’da ikamet eden ve sosyal destek kriterlerini sağlayan, 0-4 yaş arası çocuğu bulunan anneler raylı sistem ulaşım desteğine başvurabiliyor.",
+      "body": "Başvuru koşulları ve değerlendirme belediyenin resmî sosyal destek sistemi üzerinden yürütülüyor. Kişisel bilgilerin yalnızca resmî başvuru ekranına girilmesi gerekiyor.",
+      "district": "Bursa",
+      "neighborhoods": [],
+      "startsAt": null,
+      "endsAt": null,
+      "status": "open",
+      "sourceName": "Bursa Büyükşehir Belediyesi",
+      "sourceUrl": "https://www.bursa.bel.tr/yardim_basvuru",
+      "sourcePublishedAt": null,
+      "updatedAt": "2026-07-20T09:00:00.000Z",
+      "risk": "low",
+      "isFree": true,
+      "tags": [
+        "Anne Kart",
+        "sosyal destek",
+        "ulaşım desteği"
+      ]
+    },
+    {
+      "id": "bursa-karagoz-sergisi-2026",
+      "slug": "karagoz-hayal-icinde-hayal-sergisi",
+      "type": "event",
+      "subtype": "exhibition",
+      "title": "Karagöz: Hayal İçinde Hayal sergisi",
+      "summary": "Bursa Müze Merinos Galeri Alanı’ndaki Karagöz sergisi temmuz sonuna kadar ziyaret edilebiliyor.",
+      "body": "Etkinlik tarihi ve ziyaret koşulları Bursa Büyükşehir Belediyesi etkinlik takviminden doğrulanmalı. Program değişiklikleri resmî sayfada yayımlanır.",
+      "district": "Osmangazi",
+      "neighborhoods": [
+        "Merinos"
+      ],
+      "startsAt": "2026-06-12T10:00:00+03:00",
+      "endsAt": "2026-07-31T18:00:00+03:00",
+      "status": "active",
+      "sourceName": "Bursa Büyükşehir Belediyesi",
+      "sourceUrl": "https://www.bursa.bel.tr/etkinlik",
+      "sourcePublishedAt": "2026-06-12T07:00:00+03:00",
+      "updatedAt": "2026-07-20T09:00:00.000Z",
+      "risk": "low",
+      "isFree": null,
+      "tags": [
+        "sergi",
+        "Karagöz",
+        "Merinos"
+      ]
+    }
+  ],
+  "reviewQueue": []
+}
