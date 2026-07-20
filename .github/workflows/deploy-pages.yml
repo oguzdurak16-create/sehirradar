@@ -1,10 +1,11 @@
-name: GitHub Pages yedek deploy
+name: GitHub Pages saatlik yayın
 
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: "17 * * * *"
+  workflow_run:
+    workflows: ["Saatlik şehir verisi güncelleme"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -16,15 +17,19 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     env:
       GITHUB_PAGES: "true"
       NEXT_PUBLIC_SITE_URL: "https://oguzdurak16-create.github.io/sehirradar"
       NEXT_PUBLIC_BASE_PATH: "/sehirradar"
     steps:
-      - name: Depoyu al
+      - name: Main dalındaki en güncel veriyi al
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
 
       - name: Node.js kur
         uses: actions/setup-node@v4
@@ -68,8 +73,10 @@ jobs:
       - name: Statik siteyi üret
         run: npm run build
 
-      - name: Jekyll işlemesini kapat
-        run: touch out/.nojekyll
+      - name: Yayın zamanını kaydet
+        run: |
+          touch out/.nojekyll
+          printf '{"publishedAt":"%s","source":"main"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > out/deployment-status.json
 
       - name: gh-pages dalına yayınla
         uses: peaceiris/actions-gh-pages@v4
@@ -78,4 +85,4 @@ jobs:
           publish_dir: ./out
           publish_branch: gh-pages
           force_orphan: true
-          commit_message: "deploy: ${{ github.sha }}"
+          commit_message: "deploy: saatlik şehir verisi ${{ github.run_id }}"
