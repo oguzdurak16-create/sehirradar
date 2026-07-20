@@ -9,9 +9,11 @@ export function Footer() {
           <p>Resmî kaynaklardaki şehir bilgisini sadeleştirir. Resmî kurum değildir.</p>
         </div>
         <div className="footerLinks">
+          <Link href="/bugun">Bugün Bursa</Link>
           <Link href="/kaynaklar">Kaynaklar</Link>
           <Link href="/hakkinda">Yayın ilkeleri</Link>
           <Link href="/feed.xml">RSS</Link>
+          <Link href="/api/v1/items">Veri API</Link>
         </div>
       </div>
     </footer>
