@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T13:19:23.291Z",
+  "generatedAt": "2026-07-20T15:59:00.902Z",
   "city": "Bursa",
   "items": [
     {
@@ -18,7 +18,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://bapi.bursa.bel.tr/apigateway/acikveri/duyuru",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -43,7 +43,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/hunkr-koskunde-zamanin-taniklari-1520",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -68,7 +68,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/sosyal-kulturel-etkinlikler-1515",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -93,7 +93,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/bursanin-fethi-700-yil-ilce-senlikleri-1514",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -118,7 +118,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/fethin-700-yili-bando-konserleri-1511",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -143,7 +143,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/fethin-700-yili-mehter-konserleri-1510",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -168,7 +168,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/karagoz-hayal-icinde-hayal-1505",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -193,7 +193,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/gelecegi-dokuyan-fabrika-merinos-1432",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -218,7 +218,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/bursanin-muzigi-kayit-altinda-1430",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [
@@ -243,7 +243,7 @@
       "sourceName": "Bursa Büyükşehir Belediyesi",
       "sourceUrl": "https://www.bursa.bel.tr/etkinlik/bursanin-fethinin-700-yili-etkinlik-programi-1427",
       "sourcePublishedAt": null,
-      "updatedAt": "2026-07-20T13:13:41.855Z",
+      "updatedAt": "2026-07-20T15:59:00.902Z",
       "risk": "low",
       "isFree": null,
       "tags": [

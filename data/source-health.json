@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T13:19:23.291Z",
+  "generatedAt": "2026-07-20T15:59:00.902Z",
   "totalSources": 6,
   "healthySources": 5,
   "sources": [
@@ -9,8 +9,8 @@
       "url": "https://bapi.bursa.bel.tr/apigateway/acikveri/duyuru",
       "ok": true,
       "count": 1,
-      "durationMs": 1295,
-      "checkedAt": "2026-07-20T13:19:23.291Z",
+      "durationMs": 1994,
+      "checkedAt": "2026-07-20T15:59:00.902Z",
       "error": null
     },
     {
@@ -19,8 +19,8 @@
       "url": "https://www.bursa.bel.tr/etkinlik",
       "ok": true,
       "count": 10,
-      "durationMs": 1636,
-      "checkedAt": "2026-07-20T13:19:23.291Z",
+      "durationMs": 1715,
+      "checkedAt": "2026-07-20T15:59:00.902Z",
       "error": null
     },
     {
@@ -29,8 +29,8 @@
       "url": "https://www.buski.gov.tr/gunluk-su-kesintileri",
       "ok": false,
       "count": 0,
-      "durationMs": 4716,
-      "checkedAt": "2026-07-20T13:19:23.291Z",
+      "durationMs": 4720,
+      "checkedAt": "2026-07-20T15:59:00.902Z",
       "error": "fetch failed"
     },
     {
@@ -39,8 +39,8 @@
       "url": "https://www.uedas.com.tr/tr/kesintiler",
       "ok": true,
       "count": 0,
-      "durationMs": 2444,
-      "checkedAt": "2026-07-20T13:19:23.291Z",
+      "durationMs": 2251,
+      "checkedAt": "2026-07-20T15:59:00.902Z",
       "error": null
     },
     {
@@ -49,8 +49,8 @@
       "url": "https://www.burulas.com.tr/",
       "ok": true,
       "count": 4,
-      "durationMs": 1337,
-      "checkedAt": "2026-07-20T13:19:23.291Z",
+      "durationMs": 2185,
+      "checkedAt": "2026-07-20T15:59:00.902Z",
       "error": null
     },
     {
@@ -59,8 +59,8 @@
       "url": "https://www.bursa.gov.tr/",
       "ok": true,
       "count": 0,
-      "durationMs": 3228,
-      "checkedAt": "2026-07-20T13:19:23.291Z",
+      "durationMs": 3507,
+      "checkedAt": "2026-07-20T15:59:00.902Z",
       "error": null
     }
   ]
