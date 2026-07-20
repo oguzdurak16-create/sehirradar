@@ -8,6 +8,10 @@ const securityHeaders = [
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
+const isGitHubPages = process.env.GITHUB_PAGES === "true";
+const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1] ?? "sehirradar";
+const pagesBasePath = isGitHubPages ? `/${repositoryName}` : "";
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
@@ -15,9 +19,19 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
-  async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
-  },
+  ...(isGitHubPages
+    ? {
+        output: "export" as const,
+        basePath: pagesBasePath,
+        assetPrefix: pagesBasePath,
+        trailingSlash: true,
+        images: { unoptimized: true },
+      }
+    : {
+        async headers() {
+          return [{ source: "/(.*)", headers: securityHeaders }];
+        },
+      }),
 };
 
 export default nextConfig;
