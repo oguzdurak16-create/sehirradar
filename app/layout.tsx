@@ -4,7 +4,8 @@ import { Footer } from "@/components/Footer";
 import "./globals.css";
 import "./enhancements.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sehirradar.example";
+const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sehirradar.example").replace(/\/$/, "");
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -17,9 +18,9 @@ export const metadata: Metadata = {
   title: { default: "Şehir Radar | Bursa kesinti, başvuru ve etkinlikleri", template: "%s | Şehir Radar" },
   description: "Bursa su ve elektrik kesintileri, belediye başvuruları, ulaşım duyuruları ve ücretsiz etkinlikler tek ekranda.",
   applicationName: "Şehir Radar",
-  manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  alternates: { canonical: "/", types: { "application/rss+xml": "/feed.xml" } },
+  manifest: `${basePath}/manifest.webmanifest`,
+  icons: { icon: `${basePath}/icon.svg`, apple: `${basePath}/icon.svg` },
+  alternates: { canonical: siteUrl, types: { "application/rss+xml": `${siteUrl}/feed.xml` } },
   openGraph: {
     type: "website",
     locale: "tr_TR",
