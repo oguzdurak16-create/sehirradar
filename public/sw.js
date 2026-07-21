@@ -1,10 +1,10 @@
-const CACHE = "sehir-radar-live-v4";
+const CACHE = "sehir-radar-live-v5";
 const LIVE_FILES = ["deployment-status.json", "live-data.json", "source-health.json"];
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+    caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -17,30 +17,30 @@ self.addEventListener("fetch", (event) => {
 
   const isLiveFile = LIVE_FILES.some((name) => url.pathname.endsWith(name));
   const isNavigation = request.mode === "navigate";
+  const isCriticalAsset = ["style", "script"].includes(request.destination);
 
-  if (isLiveFile || isNavigation) {
+  if (isLiveFile || isNavigation || isCriticalAsset) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: "no-store" })
         .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE).then((cache) => cache.put(request, copy));
+          }
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match(url.pathname.replace(/\/[^/]*$/, "/"))))
+        .catch(() => caches.match(request))
     );
     return;
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request).then((response) => {
-        if (response.ok && ["style", "script", "image", "font"].includes(request.destination)) {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    caches.match(request).then((cached) => cached || fetch(request).then((response) => {
+      if (response.ok && ["image", "font"].includes(request.destination)) {
+        const copy = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(request, copy));
+      }
+      return response;
+    }))
   );
 });

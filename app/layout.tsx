@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { TechRuntime } from "@/components/TechRuntime";
 import "./globals.css";
 import "./national-theme.css";
+import "./mobile-hotfix.css";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sehirradar.example").replace(/\/$/, "");
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
