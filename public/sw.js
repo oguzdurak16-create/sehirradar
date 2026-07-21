@@ -1,4 +1,4 @@
-const CACHE = "sehir-radar-live-v2";
+const CACHE = "sehir-radar-live-v4";
 const LIVE_FILES = ["deployment-status.json", "live-data.json", "source-health.json"];
 
 self.addEventListener("install", () => self.skipWaiting());

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Activity, ArrowRight, Building2, CloudSun, Database, FileCheck2, RadioTower, Route, Search, ShieldCheck, Siren, Zap } from "lucide-react";
 import sourceHealth from "@/data/source-health.json";
-import { PROVINCES, data, getActiveItems, getItemProvince, getItems, getPriority, getProvinceCounts } from "@/lib/data";
+import { PROVINCES, categoryPath, data, getActiveItems, getItemProvince, getItems, getPriority, getProvinceCounts } from "@/lib/data";
 import { ItemCard } from "@/components/ItemCard";
 import { LiveStatus } from "@/components/LiveStatus";
 import { SignalTicker } from "@/components/SignalTicker";
@@ -15,6 +15,7 @@ export default function Home() {
   const applications = getItems("application").filter((item) => item.status !== "ended");
   const critical = active.filter((item) => ["critical", "high"].includes(getPriority(item))).length;
   const featured = active.slice(0, 12);
+  const heroSignals = active.slice(0, 3);
   const provinceCounts = getProvinceCounts();
   const represented = new Set(active.map(getItemProvince).filter((name) => name !== "Türkiye")).size;
   const earthquakes = alerts.filter((item) => item.subtype === "earthquake").length;
@@ -33,6 +34,26 @@ export default function Home() {
             <div className="techKicker"><span /><RadioTower size={16} /> Türkiye gerçek zamanlı şehir ağı</div>
             <h1>81 şehrin tüm sinyalleri.<br/><em>Tek canlı merkez.</em></h1>
             <p>Depremler, meteorolojik uyarılar, yol kapanmaları, şehir kesintileri, resmî duyurular, başvurular ve etkinlikler saatlik olarak süzülür.</p>
+
+            <div className="heroLivePreview" aria-label="Şu anda Türkiye'de öne çıkan bilgiler">
+              <div className="heroLiveHead">
+                <span><Activity size={15}/> Şimdi Türkiye&apos;de</span>
+                <Link href="/bugun">Tüm akış <ArrowRight size={14}/></Link>
+              </div>
+              <div className="heroLiveRows">
+                {heroSignals.map((item) => (
+                  <Link className={`heroLiveRow heroPriority-${getPriority(item)}`} href={categoryPath(item)} key={item.id}>
+                    <i />
+                    <span>
+                      <small>{getItemProvince(item)} · {item.sourceName}</small>
+                      <strong>{item.title}</strong>
+                    </span>
+                    <ArrowRight size={15}/>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             <div className="heroProvinceSelect"><ProvinceSelector /></div>
             <div className="techHeroActions">
               <Link className="techPrimary" href="/bugun"><Activity size={18}/> Türkiye akışını aç <ArrowRight size={18}/></Link>
