@@ -1,77 +1,94 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, CheckCircle2, FileCheck2, MapPin, Search, Siren } from "lucide-react";
-import { BURSA_DISTRICTS, categoryPath, data, getActiveItems, getItems } from "@/lib/data";
-import { formatDateTime } from "@/lib/format";
+import { Activity, ArrowRight, BellRing, CalendarDays, CloudSun, Database, FileCheck2, MapPin, RadioTower, Route, Search, ShieldCheck, ShipWheel, Siren, Waves, Zap } from "lucide-react";
+import sourceHealth from "@/data/source-health.json";
+import { BURSA_DISTRICTS, data, getActiveItems, getItems, getPriority } from "@/lib/data";
 import { ItemCard } from "@/components/ItemCard";
+import { LiveStatus } from "@/components/LiveStatus";
 
 export default function Home() {
+  const active = getActiveItems();
+  const alerts = getItems("alert").filter((item) => item.status !== "ended");
   const outages = getItems("outage").filter((item) => item.status !== "ended");
+  const transport = getItems("transport").filter((item) => item.status !== "ended");
   const applications = getItems("application").filter((item) => item.status !== "ended");
   const events = getItems("event").filter((item) => item.status !== "ended");
-  const featured = getActiveItems().slice(0, 6);
-  const heroItem = featured[0];
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const critical = active.filter((item) => ["critical", "high"].includes(getPriority(item))).length;
+  const featured = active.slice(0, 9);
+  const weather = alerts.find((item) => item.subtype === "weather-forecast");
+  const budo = transport.filter((item) => item.subtype.startsWith("ferry")).length;
+  const roads = transport.filter((item) => item.subtype.startsWith("road")).length;
 
   return (
-    <main className="editorialHome">
-      <section className="editorialHero">
-        <div className="editorialHeroInner">
-          <div className="editorialCopy">
-            <div className="editorialKicker">Bursa günlük şehir rehberi</div>
-            <h1>Bursa&apos;nın bugünü,<em>tek bakışta.</em></h1>
-            <p className="editorialLead">Su ve elektrik kesintilerinden açık başvurulara, ulaşım değişikliklerinden ücretsiz etkinliklere kadar seni etkileyen resmî şehir bilgisini tek yerde takip et.</p>
-            <div className="editorialActions">
-              <Link className="primaryButton" href="/bugun">Bugünün radarını aç <ArrowRight size={18} /></Link>
-              <Link className="ghostButton" href="/hakkinda">Sistem nasıl çalışıyor?</Link>
+    <main className="techHome">
+      <section className="techHero">
+        <div className="techGrid" aria-hidden="true" />
+        <div className="techGlow techGlowOne" aria-hidden="true" />
+        <div className="techGlow techGlowTwo" aria-hidden="true" />
+        <div className="techHeroInner">
+          <div className="techHeroCopy">
+            <div className="techKicker"><span /><RadioTower size={16} /> Bursa gerçek zamanlı şehir istihbaratı</div>
+            <h1>Şehrin tüm sinyalleri.<br/><em>Tek canlı merkez.</em></h1>
+            <p>Kesintiler, BUDO seferleri, yol çalışmaları, saatlik hava, afet kayıtları, başvurular ve etkinlikler resmî kaynaklardan otomatik süzülür.</p>
+            <div className="techHeroActions">
+              <Link className="techPrimary" href="/bugun"><Activity size={18}/> Canlı akışı aç <ArrowRight size={18}/></Link>
+              <Link className="techSecondary" href="/kesintiler"><BellRing size={18}/> Kritik uyarılar</Link>
             </div>
-            <div className="editorialTrust">
-              <span><CheckCircle2 size={16}/> Yalnızca resmî kaynaklar</span>
-              <span><CheckCircle2 size={16}/> Her saat otomatik kontrol</span>
-              <span><CheckCircle2 size={16}/> Kaynağa doğrudan bağlantı</span>
+            <div className="techTrust">
+              <span><ShieldCheck size={15}/> Resmî kaynak doğrulaması</span>
+              <span><Database size={15}/> Saatlik veri işleme</span>
+              <span><Zap size={15}/> Otomatik önceliklendirme</span>
             </div>
           </div>
 
-          <div className="editorialVisual">
-            <Image className="editorialPanorama" src={`${basePath}/bursa-panorama.svg`} alt="Uludağ, Bursa çatıları ve tarihi şehir siluetinden oluşan özgün illüstrasyon" fill priority sizes="(max-width: 980px) 100vw, 46vw" />
-            <div className="editorialStamp"><span><b>{featured.length}</b>aktif kayıt</span></div>
-            <div className="editorialCaption">
-              <span>
-                <small>{heroItem ? `${heroItem.district} · güncel kayıt` : "Bursa · şehir akışı"}</small>
-                <strong>{heroItem?.title ?? "Bursa şehir verileri saatlik olarak kontrol ediliyor."}</strong>
-              </span>
-              <Link href={heroItem ? categoryPath(heroItem) : "/bugun"}>Detayı aç <ArrowRight size={15}/></Link>
-            </div>
+          <div className="radarCore" aria-label="Bursa canlı radar özeti">
+            <div className="radarOrbit orbitOne" />
+            <div className="radarOrbit orbitTwo" />
+            <div className="radarSweep" />
+            <div className="radarCenter"><span>{active.length}</span><small>AKTİF SİNYAL</small></div>
+            <div className="radarNode nodeWeather"><CloudSun size={18}/><span>Hava</span></div>
+            <div className="radarNode nodeRoad"><Route size={18}/><span>Yol</span></div>
+            <div className="radarNode nodeFerry"><ShipWheel size={18}/><span>BUDO</span></div>
+            <div className="radarNode nodeWater"><Waves size={18}/><span>Altyapı</span></div>
           </div>
         </div>
       </section>
 
-      <section className="editorialStats">
-        <Link href="/kesintiler"><span className="statIcon outageIcon"><Siren/></span><span><small>Güncel kesinti</small><strong>{outages.length}</strong></span><ArrowRight/></Link>
-        <Link href="/basvurular"><span className="statIcon applicationIcon"><FileCheck2/></span><span><small>Açık başvuru</small><strong>{applications.length}</strong></span><ArrowRight/></Link>
-        <Link href="/etkinlikler"><span className="statIcon eventIcon"><CalendarDays/></span><span><small>Yaklaşan etkinlik</small><strong>{events.length}</strong></span><ArrowRight/></Link>
-        <div className="lastUpdate"><small>Son resmî kaynak kontrolü</small><strong>{formatDateTime(data.generatedAt)}</strong></div>
+      <div className="techStatusWrap"><LiveStatus /></div>
+
+      <section className="signalModules" aria-label="Canlı veri modülleri">
+        <Link href="/kesintiler" className="signalModule signalDanger"><span><Siren/></span><div><small>Kritik / önemli</small><strong>{critical}</strong><p>Öncelikli şehir uyarısı</p></div><ArrowRight/></Link>
+        <Link href="/kesintiler" className="signalModule"><span><CloudSun/></span><div><small>Saatlik hava</small><strong>{weather ? weather.title.replace("Bursa saatlik hava: ", "") : "Takipte"}</strong><p>MGM tahmin ve eşik analizi</p></div><ArrowRight/></Link>
+        <Link href="/kesintiler" className="signalModule"><span><ShipWheel/></span><div><small>BUDO sinyali</small><strong>{budo}</strong><p>İptal ve ek seferler</p></div><ArrowRight/></Link>
+        <Link href="/kesintiler" className="signalModule"><span><Route/></span><div><small>Yol durumu</small><strong>{roads}</strong><p>KGM çalışma ve kapanmaları</p></div><ArrowRight/></Link>
       </section>
 
-      <section className="homeSection">
-        <div className="sectionHeading"><div><span className="eyebrow">Şehir nabzı</span><h2>Bugün bilmen gerekenler</h2></div><Link href="/bugun">Tüm şehir akışı <ArrowRight size={17}/></Link></div>
-        {featured.length ? <div className="cardGrid">{featured.map((item) => <ItemCard item={item} key={item.id}/>)}</div> : <div className="emptyState"><strong>Şu anda aktif kayıt yok.</strong><p>Resmî kaynaklar her saat yeniden kontrol ediliyor.</p></div>}
+      <section className="techSection">
+        <div className="techSectionHead">
+          <div><span className="techEyebrow">ÖNCELİKLİ AKIŞ</span><h2>Şu anda bilmen gerekenler</h2><p>Önem ve güncellik puanına göre otomatik sıralanır.</p></div>
+          <Link href="/bugun">Tüm sinyaller <ArrowRight size={17}/></Link>
+        </div>
+        {featured.length ? <div className="cardGrid techCardGrid">{featured.map((item) => <ItemCard item={item} key={item.id}/>)}</div> : <div className="emptyState"><strong>Aktif sinyal bulunamadı.</strong><p>Kaynaklar saatlik olarak yeniden taranıyor.</p></div>}
       </section>
 
-      <section className="districtSection">
-        <div className="sectionHeading"><div><span className="eyebrow">Mahallene yaklaş</span><h2>Bursa&apos;yı ilçe ilçe takip et</h2></div></div>
+      <section className="dataMatrix">
+        <div className="matrixHead"><span className="techEyebrow">VERİ MATRİSİ</span><h2>Şehrin tüm katmanları</h2></div>
+        <div className="matrixGrid">
+          <Link href="/kesintiler"><Siren/><span><strong>{alerts.length + outages.length}</strong><small>Uyarı ve kesinti</small></span><ArrowRight/></Link>
+          <Link href="/kesintiler"><Route/><span><strong>{transport.length}</strong><small>Ulaşım sinyali</small></span><ArrowRight/></Link>
+          <Link href="/basvurular"><FileCheck2/><span><strong>{applications.length}</strong><small>Açık başvuru</small></span><ArrowRight/></Link>
+          <Link href="/etkinlikler"><CalendarDays/><span><strong>{events.length}</strong><small>Etkinlik</small></span><ArrowRight/></Link>
+          <div><Database/><span><strong>{sourceHealth.healthySources}/{sourceHealth.totalSources}</strong><small>Sağlıklı kaynak</small></span></div>
+          <div><Activity/><span><strong>{data.items.length}</strong><small>Toplam veri kaydı</small></span></div>
+        </div>
+      </section>
+
+      <section className="districtSection techDistrictSection">
+        <div className="techSectionHead"><div><span className="techEyebrow">KONUM RADARI</span><h2>İlçeni seç, sinyali daralt</h2></div><Link href="/bugun"><Search size={17}/> Gelişmiş arama</Link></div>
         <div className="districtGrid">
           {BURSA_DISTRICTS.map((district) => (
-            <Link href={`/bursa/${district.slug}`} key={district.slug}>
-              <MapPin size={16} /><span>{district.name}</span><ArrowRight size={15}/>
-            </Link>
+            <Link href={`/bursa/${district.slug}`} key={district.slug}><MapPin size={15}/><span>{district.name}</span><ArrowRight size={14}/></Link>
           ))}
         </div>
-      </section>
-
-      <section className="searchBanner">
-        <div><MapPin/><span><small>İlçe ve mahalle filtresi</small><h2>Seni etkileyen şehir bilgisini saniyeler içinde bul.</h2></span></div>
-        <Link href="/bugun"><Search/> Radarı aç</Link>
       </section>
     </main>
   );
