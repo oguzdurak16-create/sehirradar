@@ -1,13 +1,13 @@
 {
   "name": "sehir-radar",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "ingest": "node scripts/ingest.mjs && node scripts/normalize-content.mjs && node scripts/ensure-unique-slugs.mjs",
+    "ingest": "node scripts/ingest.mjs && node scripts/extra-sources.mjs && node scripts/normalize-content.mjs && node scripts/ensure-unique-slugs.mjs",
     "validate:data": "node scripts/validate-data.mjs"
   },
   "dependencies": {
