@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, Building2, CalendarDays, CircleHelp, FileCheck2, Menu, RadioTower, Siren } from "lucide-react";
+import { Activity, Building2, CalendarDays, CircleHelp, FileCheck2, RadioTower, Siren } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 const links = [
@@ -23,8 +23,10 @@ export function Header() {
         </nav>
         <div className="headerLive"><span /><RadioTower size={15} /> TÜRKİYE LIVE</div>
         <details className="mobileMenu">
-          <summary aria-label="Menüyü aç"><Menu /></summary>
-          <nav>{links.map(({ href, label }) => <Link href={href} key={href}>{label}</Link>)}</nav>
+          <summary aria-label="Menüyü aç veya kapat">
+            <span className="hamburgerGlyph" aria-hidden="true"><i /><i /><i /></span>
+          </summary>
+          <nav>{links.map(({ href, label, icon: Icon }) => <Link href={href} key={href}><Icon size={18}/><span>{label}</span></Link>)}</nav>
         </details>
       </div>
     </header>

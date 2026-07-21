@@ -8,8 +8,18 @@ export function TechRuntime() {
     setNetwork();
     window.addEventListener("online", setNetwork);
     window.addEventListener("offline", setNetwork);
-    const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-    if ("serviceWorker" in navigator) navigator.serviceWorker.register(`${basePath}/sw.js`).catch(() => undefined);
+
+    void (async () => {
+      if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.startsWith("sehir-radar")).map((key) => caches.delete(key)));
+      }
+    })();
+
     return () => {
       window.removeEventListener("online", setNetwork);
       window.removeEventListener("offline", setNetwork);

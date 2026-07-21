@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import type { RadarItem } from "@/lib/types";
 import { getItemProvince, getPriority } from "@/lib/data";
 import { PROVINCES } from "@/lib/provinces";
+import { dedupeRadarItems, fetchLiveRadarData } from "@/lib/live-data-client";
 import { ItemCard } from "@/components/ItemCard";
 
 const channels = [
@@ -28,21 +29,44 @@ export function FilterableList({
   initialProvince?: string;
   eyebrow?: string;
 }) {
+  const fallbackItems = useMemo(() => dedupeRadarItems(items), [items]);
+  const scopeKey = useMemo(() => [...new Set(items.map((item) => item.type))].sort().join("|"), [items]);
+  const [sourceItems, setSourceItems] = useState(fallbackItems);
   const [query, setQuery] = useState("");
   const [province, setProvince] = useState(initialProvince);
   const [district, setDistrict] = useState("all");
   const [channel, setChannel] = useState("all");
   const [activeOnly, setActiveOnly] = useState(true);
 
-  const districts = useMemo(() => Array.from(new Set(items
+  useEffect(() => {
+    let mounted = true;
+    setSourceItems(fallbackItems);
+
+    const refresh = async () => {
+      const live = await fetchLiveRadarData();
+      if (!mounted || !live) return;
+      const allowedTypes = new Set(scopeKey.split("|").filter(Boolean));
+      const scoped = allowedTypes.size ? live.items.filter((item) => allowedTypes.has(item.type)) : live.items;
+      setSourceItems(dedupeRadarItems(scoped));
+    };
+
+    void refresh();
+    const timer = window.setInterval(refresh, 5 * 60 * 1000);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, [fallbackItems, scopeKey]);
+
+  const districts = useMemo(() => Array.from(new Set(sourceItems
     .filter((item) => province === "all" || getItemProvince(item) === province)
     .map((item) => item.district)
     .filter((name) => name && name !== province && name !== "Türkiye")))
-    .sort((a, b) => a.localeCompare(b, "tr")), [items, province]);
+    .sort((a, b) => a.localeCompare(b, "tr")), [sourceItems, province]);
 
   const filtered = useMemo(() => {
     const normalized = query.toLocaleLowerCase("tr-TR").trim();
-    return items.filter((item) => {
+    return sourceItems.filter((item) => {
       const itemProvince = getItemProvince(item);
       const matchesQuery = !normalized || [item.title, item.summary, itemProvince, item.district, item.sourceName, ...item.neighborhoods, ...item.tags]
         .join(" ").toLocaleLowerCase("tr-TR").includes(normalized);
@@ -55,7 +79,7 @@ export function FilterableList({
         || item.type === channel;
       return matchesQuery && matchesProvince && matchesDistrict && matchesStatus && matchesChannel;
     });
-  }, [items, query, province, district, channel, activeOnly]);
+  }, [sourceItems, query, province, district, channel, activeOnly]);
 
   return (
     <section className="listingSection techListing">
