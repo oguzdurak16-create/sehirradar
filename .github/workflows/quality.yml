@@ -15,6 +15,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Veri toplayıcı söz dizimi
+        run: |
+          node --check scripts/ingest.mjs
+          node --check scripts/extra-sources.mjs
+          node --check scripts/normalize-content.mjs
+          node --check scripts/ensure-unique-slugs.mjs
       - run: npm run validate:data
       - run: npm run lint
       - run: npm run build
