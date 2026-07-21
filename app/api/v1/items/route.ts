@@ -1,7 +1,7 @@
 import { data, sortItems } from "@/lib/data";
 import type { ContentStatus, ContentType } from "@/lib/types";
 
-const contentTypes = new Set<ContentType>(["outage", "application", "event", "transport"]);
+const contentTypes = new Set<ContentType>(["outage", "application", "event", "transport", "alert"]);
 const contentStatuses = new Set<ContentStatus>(["active", "open", "planned", "ended", "unknown"]);
 
 export function GET(request: Request) {
@@ -27,7 +27,7 @@ export function GET(request: Request) {
     if (activeOnly && item.status === "ended") return false;
     if (district && item.district.toLocaleLowerCase("tr-TR") !== district.toLocaleLowerCase("tr-TR")) return false;
     if (query) {
-      const haystack = [item.title, item.summary, item.district, ...item.neighborhoods, ...item.tags]
+      const haystack = [item.title, item.summary, item.district, item.sourceName, ...item.neighborhoods, ...item.tags]
         .join(" ")
         .toLocaleLowerCase("tr-TR");
       if (!haystack.includes(query)) return false;

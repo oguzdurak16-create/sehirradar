@@ -116,7 +116,7 @@ function confidentRange(text, type) {
 function normalizedStatus(item) {
   if (item.endsAt && new Date(item.endsAt).getTime() < NOW.getTime()) return "ended";
   if (item.type === "application") return "open";
-  if (item.type === "event") return "active";
+  if (["event", "alert"].includes(item.type)) return "active";
   return "planned";
 }
 

@@ -1,4 +1,4 @@
-export type ContentType = "outage" | "application" | "event" | "transport";
+export type ContentType = "outage" | "application" | "event" | "transport" | "alert";
 export type ContentStatus = "active" | "open" | "planned" | "ended" | "unknown";
 
 export interface RadarItem {

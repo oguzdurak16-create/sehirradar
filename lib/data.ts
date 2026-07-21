@@ -23,15 +23,31 @@ export const BURSA_DISTRICTS = [
   { name: "Yıldırım", slug: "yildirim" },
 ] as const;
 
+export type PriorityLevel = "critical" | "high" | "medium" | "low";
+
 function itemTime(item: RadarItem): number {
   return new Date(item.startsAt ?? item.updatedAt).getTime();
 }
 
+export function getPriority(item: RadarItem): PriorityLevel {
+  const text = `${item.subtype} ${item.title} ${item.summary}`.toLocaleLowerCase("tr-TR");
+  if (/earthquake|deprem|ferry-cancelled|iptal sefer|road-closed|yol kapalı|turuncu|kırmızı/.test(text)) return "critical";
+  if (/weather-warning|hava dikkat|elektrik|su kesint|ulaşım|road-work|trafik|fırtına|sel|yangın/.test(text)) return "high";
+  if (item.type === "application" || item.type === "event" || item.subtype === "weather-forecast") return "medium";
+  return "low";
+}
+
+export function isFresh(item: RadarItem, hours = 4): boolean {
+  return Date.now() - new Date(item.updatedAt).getTime() <= hours * 3600000;
+}
+
 export function sortItems(items: RadarItem[]): RadarItem[] {
   const statusWeight: Record<string, number> = { active: 4, open: 4, planned: 3, unknown: 2, ended: 1 };
+  const priorityWeight: Record<PriorityLevel, number> = { critical: 4, high: 3, medium: 2, low: 1 };
   return [...items].sort((a, b) => {
+    const priorityDifference = priorityWeight[getPriority(b)] - priorityWeight[getPriority(a)];
     const statusDifference = (statusWeight[b.status] ?? 0) - (statusWeight[a.status] ?? 0);
-    return statusDifference || itemTime(b) - itemTime(a);
+    return priorityDifference || statusDifference || itemTime(b) - itemTime(a);
   });
 }
 
@@ -87,7 +103,7 @@ export function getDistrictItems(districtName: string): RadarItem[] {
 }
 
 export function categoryPath(item: RadarItem): string {
-  if (item.type === "outage" || item.type === "transport") return `/kesintiler/${item.slug}`;
+  if (["outage", "transport", "alert"].includes(item.type)) return `/kesintiler/${item.slug}`;
   if (item.type === "application") return `/basvurular/${item.slug}`;
   return `/etkinlikler/${item.slug}`;
 }
