@@ -19,6 +19,7 @@ jobs:
         run: |
           node --check scripts/ingest.mjs
           node --check scripts/extra-sources.mjs
+          node --check scripts/correct-live-sources.mjs
           node --check scripts/normalize-content.mjs
           node --check scripts/ensure-unique-slugs.mjs
       - run: npm run validate:data
