@@ -6,6 +6,7 @@ import "./globals.css";
 import "./enhancements.css";
 import "./editorial-theme.css";
 import "./tech-theme.css";
+import "./tech-extras.css";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://sehirradar.example").replace(/\/$/, "");
 const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
