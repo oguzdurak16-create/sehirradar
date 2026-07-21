@@ -5,11 +5,12 @@ export function Footer() {
     <footer className="siteFooter">
       <div className="footerInner">
         <div>
-          <strong>Şehir Radar</strong>
-          <p>Resmî kaynaklardaki şehir bilgisini sadeleştirir. Resmî kurum değildir.</p>
+          <strong>Şehir Radar Türkiye</strong>
+          <p>81 il için resmî kaynaklardaki şehir bilgisini sadeleştirir. Resmî kurum değildir.</p>
         </div>
         <div className="footerLinks">
-          <Link href="/bugun">Bugün Bursa</Link>
+          <Link href="/bugun">Türkiye canlı akışı</Link>
+          <Link href="/sehirler">81 şehir</Link>
           <Link href="/kaynaklar">Kaynaklar</Link>
           <Link href="/hakkinda">Yayın ilkeleri</Link>
           <Link href="/feed.xml">RSS</Link>

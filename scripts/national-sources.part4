@@ -1,0 +1,122 @@
+       if (item) provinceItems.push(item);
+      });
+      items.push(...provinceItems);
+    } catch (error) {
+      failures.push(`${province}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  return { items, selected, failures };
+}
+
+function stableSignature(item) {
+  return JSON.stringify(Object.fromEntries(Object.entries(item).filter(([key]) => key !== "updatedAt")));
+}
+
+function unique(items) {
+  const map = new Map();
+  for (const item of items) {
+    const key = item.id || `${item.type}|${slugify(item.title)}|${item.province || item.district}`;
+    const previous = map.get(key);
+    if (!previous || item.body.length > previous.body.length) map.set(key, item);
+  }
+  return [...map.values()];
+}
+
+async function writeJson(file, value) {
+  const temporary = `${file}.tmp`;
+  await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`);
+  await fs.rename(temporary, file);
+}
+
+async function main() {
+  const data = JSON.parse(await fs.readFile(DATA_FILE, "utf8"));
+  const health = JSON.parse(await fs.readFile(HEALTH_FILE, "utf8"));
+  data.items = data.items.map((item) => ({ ...item, province: item.province || inferProvince(`${item.district} ${item.sourceName} ${item.title}`, /Bursa|BUSKİ|BURULAŞ|BUDO/i.test(`${item.sourceName} ${item.title}`) ? "Bursa" : "Türkiye") }));
+  data.reviewQueue = data.reviewQueue.map((item) => ({ ...item, province: item.province || inferProvince(`${item.district} ${item.sourceName} ${item.title}`, "Türkiye") }));
+
+  const reports = [];
+  const fresh = [];
+  const managedSources = new Set(["Karayolları Genel Müdürlüğü", "AFAD Son Depremler", "Meteoroloji Genel Müdürlüğü - MeteoUYARI"]);
+  const successfulSources = new Set();
+  let selectedGovernors = [];
+
+  const jobs = [
+    { name: "KGM Türkiye yol durumu", sourceName: "Karayolları Genel Müdürlüğü", url: SOURCES.kgm, run: ingestKgmNational },
+    { name: "MGM Türkiye MeteoUYARI", sourceName: "Meteoroloji Genel Müdürlüğü - MeteoUYARI", url: SOURCES.mgmToday, run: ingestMeteoWarnings },
+    { name: "AFAD Türkiye son depremler", sourceName: "AFAD Son Depremler", url: SOURCES.afadHtml, run: ingestAfadNational },
+  ];
+
+  for (const job of jobs) {
+    const started = Date.now();
+    try {
+      const items = await job.run();
+      fresh.push(...items);
+      successfulSources.add(job.sourceName);
+      reports.push({ name: job.name, sourceName: job.sourceName, url: job.url, ok: true, count: items.length, durationMs: Date.now() - started, checkedAt: NOW_ISO, error: null });
+      console.log(`${job.name}: ${items.length}`);
+    } catch (error) {
+      reports.push({ name: job.name, sourceName: job.sourceName, url: job.url, ok: false, count: 0, durationMs: Date.now() - started, checkedAt: NOW_ISO, error: error instanceof Error ? error.message : String(error) });
+      console.error(`${job.name} başarısız:`, error instanceof Error ? error.message : error);
+    }
+  }
+
+  const governorStarted = Date.now();
+  try {
+    const governor = await ingestGovernorRotation();
+    fresh.push(...governor.items);
+    selectedGovernors = governor.selected;
+    selectedGovernors.forEach((province) => managedSources.add(`${province} Valiliği`));
+    governor.items.forEach((item) => successfulSources.add(item.sourceName));
+    reports.push({
+      name: "81 İl Valilik rotasyonu",
+      sourceName: "Türkiye Valilikleri",
+      url: SOURCES.governors,
+      ok: governor.failures.length < governor.selected.length,
+      count: governor.items.length,
+      durationMs: Date.now() - governorStarted,
+      checkedAt: NOW_ISO,
+      error: governor.failures.length ? governor.failures.slice(0, 6).join(" | ") : null,
+      checkedProvinces: governor.selected,
+    });
+    console.log(`Valilik rotasyonu: ${governor.items.length} kayıt / ${governor.selected.length} il`);
+  } catch (error) {
+    reports.push({ name: "81 İl Valilik rotasyonu", sourceName: "Türkiye Valilikleri", url: SOURCES.governors, ok: false, count: 0, durationMs: Date.now() - governorStarted, checkedAt: NOW_ISO, error: error instanceof Error ? error.message : String(error), checkedProvinces: [] });
+  }
+
+  const oldById = new Map(data.items.map((item) => [item.id, item]));
+  const refreshed = unique(fresh).map((item) => {
+    const previous = oldById.get(item.id);
+    return previous && stableSignature(previous) === stableSignature(item) ? { ...item, updatedAt: previous.updatedAt } : item;
+  });
+  const freshIds = new Set(refreshed.map((item) => item.id));
+  const selectedSet = new Set(selectedGovernors);
+  const retained = data.items.filter((item) => {
+    if (freshIds.has(item.id)) return false;
+    const isNationalManaged = managedSources.has(item.sourceName);
+    const isSelectedGovernor = item.sourceName.endsWith(" Valiliği") && selectedSet.has(item.sourceName.replace(/ Valiliği$/, ""));
+    if (!isNationalManaged && !isSelectedGovernor) return true;
+    if (!successfulSources.has(item.sourceName) && !["Karayolları Genel Müdürlüğü","AFAD Son Depremler","Meteoroloji Genel Müdürlüğü - MeteoUYARI"].includes(item.sourceName)) return true;
+    const ageHours = (NOW.getTime() - new Date(item.updatedAt).getTime()) / 3600000;
+    return ageHours <= (item.sourceName.endsWith(" Valiliği") ? 168 : 48);
+  });
+
+  data.items = unique([...refreshed, ...retained]);
+  data.city = "Türkiye";
+  data.country = "Türkiye";
+  data.generatedAt = NOW_ISO;
+
+  const reportNames = new Set(reports.map((report) => report.name));
+  health.sources = [...health.sources.filter((source) => !reportNames.has(source.name)), ...reports];
+  health.generatedAt = NOW_ISO;
+  health.totalSources = health.sources.length;
+  health.healthySources = health.sources.filter((source) => source.ok).length;
+
+  await writeJson(DATA_FILE, data);
+  await writeJson(HEALTH_FILE, health);
+  console.log(`Türkiye ağı tamamlandı: ${refreshed.length} yeni/güncel, ${data.items.length} toplam, ${health.healthySources}/${health.totalSources} kaynak sağlıklı.`);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

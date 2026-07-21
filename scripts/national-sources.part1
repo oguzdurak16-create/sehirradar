@@ -1,0 +1,129 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import crypto from "node:crypto";
+import * as cheerio from "cheerio";
+
+const ROOT = process.cwd();
+const DATA_FILE = path.join(ROOT, "data/content.json");
+const HEALTH_FILE = path.join(ROOT, "data/source-health.json");
+const TIMEOUT = Number(process.env.INGEST_TIMEOUT_MS || 25000);
+const RETRIES = Number(process.env.INGEST_RETRIES || 3);
+const NOW = new Date();
+const NOW_ISO = NOW.toISOString();
+const UA = "SehirRadarTurkiyeBot/3.0 (+official public information aggregator)";
+
+const SOURCES = {
+  kgm: "https://www.kgm.gov.tr/Sayfalar/KGM/SiteTr/YolDanisma/GunlukYolDurumuBulteni.aspx",
+  mgmToday: "https://www.mgm.gov.tr/meteouyari/turkiye.aspx?Gun=1",
+  mgmTomorrow: "https://www.mgm.gov.tr/meteouyari/turkiye.aspx?Gun=2",
+  afadApi: "https://deprem.afad.gov.tr/apiv2/event/filter",
+  afadHtml: "https://deprem.afad.gov.tr/sondepremler",
+  governors: "https://www.icisleri.gov.tr/valilikler",
+};
+
+const PROVINCES = [
+  ["Adana","adana"],["Adıyaman","adiyaman"],["Afyonkarahisar","afyonkarahisar","afyon"],["Ağrı","agri"],["Amasya","amasya"],
+  ["Ankara","ankara"],["Antalya","antalya"],["Artvin","artvin"],["Aydın","aydin"],["Balıkesir","balikesir"],
+  ["Bilecik","bilecik"],["Bingöl","bingol"],["Bitlis","bitlis"],["Bolu","bolu"],["Burdur","burdur"],["Bursa","bursa"],
+  ["Çanakkale","canakkale"],["Çankırı","cankiri"],["Çorum","corum"],["Denizli","denizli"],["Diyarbakır","diyarbakir"],
+  ["Edirne","edirne"],["Elazığ","elazig"],["Erzincan","erzincan"],["Erzurum","erzurum"],["Eskişehir","eskisehir"],
+  ["Gaziantep","gaziantep","antep"],["Giresun","giresun"],["Gümüşhane","gumushane"],["Hakkâri","hakkari"],["Hatay","hatay"],
+  ["Isparta","isparta"],["Mersin","mersin","icel"],["İstanbul","istanbul"],["İzmir","izmir"],["Kars","kars"],
+  ["Kastamonu","kastamonu"],["Kayseri","kayseri"],["Kırklareli","kirklareli"],["Kırşehir","kirsehir"],["Kocaeli","kocaeli","izmit"],
+  ["Konya","konya"],["Kütahya","kutahya"],["Malatya","malatya"],["Manisa","manisa"],["Kahramanmaraş","kahramanmaras","maras"],
+  ["Mardin","mardin"],["Muğla","mugla"],["Muş","mus"],["Nevşehir","nevsehir"],["Niğde","nigde"],["Ordu","ordu"],
+  ["Rize","rize"],["Sakarya","sakarya","adapazari"],["Samsun","samsun"],["Siirt","siirt"],["Sinop","sinop"],["Sivas","sivas"],
+  ["Tekirdağ","tekirdag"],["Tokat","tokat"],["Trabzon","trabzon"],["Tunceli","tunceli"],["Şanlıurfa","sanliurfa","urfa"],
+  ["Uşak","usak"],["Van","van"],["Yozgat","yozgat"],["Zonguldak","zonguldak"],["Aksaray","aksaray"],["Bayburt","bayburt"],
+  ["Karaman","karaman"],["Kırıkkale","kirikkale"],["Batman","batman"],["Şırnak","sirnak"],["Bartın","bartin"],["Ardahan","ardahan"],
+  ["Iğdır","igdir"],["Yalova","yalova"],["Karabük","karabuk"],["Kilis","kilis"],["Osmaniye","osmaniye"],["Düzce","duzce"],
+];
+
+const LEVEL_WEIGHT = { yellow: 1, orange: 2, red: 3 };
+
+function clean(value = "") {
+  return cheerio.load(`<body>${String(value)}</body>`, null, false).text().replace(/\s+/g, " ").trim();
+}
+
+function slugify(value) {
+  return String(value).toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i").replace(/ğ/g, "g").replace(/ü/g, "u").replace(/ş/g, "s").replace(/ö/g, "o").replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 110);
+}
+
+function hash(value) {
+  return crypto.createHash("sha1").update(String(value)).digest("hex").slice(0, 12);
+}
+
+function sentence(value, max = 260) {
+  const text = clean(value);
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const boundary = Math.max(cut.lastIndexOf("."), cut.lastIndexOf(";"), cut.lastIndexOf(" "));
+  return `${cut.slice(0, boundary > 45 ? boundary : max).trim()}…`;
+}
+
+function normalizedWords(value) {
+  return ` ${slugify(value).replace(/-/g, " ")} `;
+}
+
+function inferProvinces(text) {
+  const normalized = normalizedWords(text);
+  return PROVINCES.filter(([, ...aliases]) => aliases.some((alias) => new RegExp(`(?:^|\\s)${alias}(?:\\s|$)`).test(normalized))).map(([name]) => name);
+}
+
+function inferProvince(text, fallback = "Türkiye") {
+  return inferProvinces(text)[0] || fallback;
+}
+
+function parseDates(text) {
+  return [...String(text).matchAll(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](20\d{2})(?:[^\d]{0,12}(\d{1,2})[:.](\d{2}))?/g)].map((match) => {
+    const hour = match[4] || "09";
+    const minute = match[5] || "00";
+    return `${match[3]}-${String(match[2]).padStart(2,"0")}-${String(match[1]).padStart(2,"0")}T${String(hour).padStart(2,"0")}:${minute}:00+03:00`;
+  });
+}
+
+function recentOrFuture(date, pastDays = 7, futureDays = 60) {
+  if (!date) return false;
+  const delta = new Date(date).getTime() - NOW.getTime();
+  return delta >= -pastDays * 86400000 && delta <= futureDays * 86400000;
+}
+
+function createItem({ sourceName, sourceUrl, type, subtype, title, body, province = "Türkiye", district, startsAt = null, endsAt = null, tags = [] }) {
+  const safeTitle = sentence(title, 120);
+  const safeBody = sentence(body || title, 1200);
+  if (safeTitle.length < 8 || safeBody.length < 20) return null;
+  const location = district || province;
+  const id = `${slugify(sourceName)}-${hash(`${sourceUrl}|${safeTitle}|${province}|${location}`)}`;
+  return {
+    id,
+    slug: slugify(safeTitle) || id,
+    type,
+    subtype,
+    title: safeTitle,
+    summary: sentence(safeBody, 280),
+    body: safeBody,
+    province,
+    district: location,
+    neighborhoods: [],
+    startsAt,
+    endsAt,
+    status: endsAt && new Date(endsAt).getTime() < NOW.getTime() ? "ended" : type === "application" ? "open" : "active",
+    sourceName,
+    sourceUrl,
+    sourcePublishedAt: startsAt,
+    updatedAt: NOW_ISO,
+    risk: "low",
+    isFree: null,
+    tags: [...new Set([subtype, province, location, sourceName, "Türkiye", ...tags])].filter(Boolean),
+  };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchText(url) {
+  let lastError;
+  for (let attempt = 1; attempt <= RETRIES; attempt += 1) 

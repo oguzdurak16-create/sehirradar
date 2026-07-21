@@ -15,11 +15,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Türkiye kaynaklarını ve temayı oluştur
+        run: node scripts/assemble-national.mjs
       - name: Veri toplayıcı söz dizimi
         run: |
           node --check scripts/ingest.mjs
           node --check scripts/extra-sources.mjs
           node --check scripts/correct-live-sources.mjs
+          node --check scripts/national-sources.mjs
           node --check scripts/normalize-content.mjs
           node --check scripts/ensure-unique-slugs.mjs
       - run: npm run validate:data

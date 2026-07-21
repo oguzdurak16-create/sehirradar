@@ -1,7 +1,9 @@
 import rawData from "@/data/content.json";
 import type { ContentType, RadarData, RadarItem } from "@/lib/types";
+import { PROVINCES, PROVINCE_NAMES, getProvinceBySlug as findProvinceBySlug } from "@/lib/provinces";
 
 export const data = rawData as RadarData;
+export { PROVINCES };
 
 export const BURSA_DISTRICTS = [
   { name: "Büyükorhan", slug: "buyukorhan" },
@@ -29,11 +31,18 @@ function itemTime(item: RadarItem): number {
   return new Date(item.startsAt ?? item.updatedAt).getTime();
 }
 
+export function getItemProvince(item: RadarItem): string {
+  if (item.province) return item.province;
+  if (PROVINCE_NAMES.includes(item.district)) return item.district;
+  if (/bursa|buski|burulaş|budo/i.test(`${item.sourceName} ${item.title} ${item.body}`)) return "Bursa";
+  return "Türkiye";
+}
+
 export function getPriority(item: RadarItem): PriorityLevel {
   const text = `${item.subtype} ${item.title} ${item.summary}`.toLocaleLowerCase("tr-TR");
-  if (/earthquake|deprem|ferry-cancelled|iptal sefer|road-closed|yol kapalı|turuncu|kırmızı/.test(text)) return "critical";
-  if (/weather-warning|hava dikkat|elektrik|su kesint|ulaşım|road-work|trafik|fırtına|sel|yangın/.test(text)) return "high";
-  if (item.type === "application" || item.type === "event" || item.subtype === "weather-forecast") return "medium";
+  if (/earthquake|deprem|ferry-cancelled|iptal sefer|road-closed|yol kapalı|kırmızı|çok tehlikeli/.test(text)) return "critical";
+  if (/weather-warning|meteo-warning|hava dikkat|elektrik|su kesint|ulaşım|road-work|trafik|fırtına|sel|yangın|turuncu/.test(text)) return "high";
+  if (item.type === "application" || item.type === "event" || item.subtype === "weather-forecast" || /sarı/.test(text)) return "medium";
   return "low";
 }
 
@@ -62,19 +71,15 @@ export function getActiveItems(items = data.items): RadarItem[] {
 
 export function isActiveToday(item: RadarItem, reference = new Date()): boolean {
   if (item.status === "ended") return false;
-
   const startOfDay = new Date(reference);
   startOfDay.setHours(0, 0, 0, 0);
   const endOfDay = new Date(reference);
   endOfDay.setHours(23, 59, 59, 999);
-
   const startsAt = item.startsAt ? new Date(item.startsAt) : null;
   const endsAt = item.endsAt ? new Date(item.endsAt) : null;
-
   if (startsAt && startsAt > endOfDay) return false;
   if (endsAt && endsAt < startOfDay) return false;
-  if (!startsAt && !endsAt) return ["active", "open"].includes(item.status);
-
+  if (!startsAt && !endsAt) return ["active", "open", "planned"].includes(item.status);
   return true;
 }
 
@@ -92,13 +97,32 @@ export function getDistricts(items = data.items): string[] {
   );
 }
 
+export function getProvinceBySlug(slug: string) {
+  return findProvinceBySlug(slug);
+}
+
+export function getProvinceItems(provinceName: string, includeNational = true): RadarItem[] {
+  return sortItems(data.items.filter((item) => {
+    const province = getItemProvince(item);
+    return province === provinceName || (includeNational && province === "Türkiye");
+  }));
+}
+
+export function getProvinceCounts(): Record<string, number> {
+  return data.items.reduce<Record<string, number>>((counts, item) => {
+    const province = getItemProvince(item);
+    if (province !== "Türkiye") counts[province] = (counts[province] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
 export function getDistrictBySlug(slug: string) {
   return BURSA_DISTRICTS.find((district) => district.slug === slug);
 }
 
 export function getDistrictItems(districtName: string): RadarItem[] {
   return sortItems(
-    data.items.filter((item) => item.district === districtName || item.district === "Bursa")
+    data.items.filter((item) => item.district === districtName || (getItemProvince(item) === "Bursa" && item.district === "Bursa"))
   );
 }
 

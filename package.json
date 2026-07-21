@@ -7,8 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "ingest": "node scripts/ingest.mjs && node scripts/extra-sources.mjs && node scripts/correct-live-sources.mjs && node scripts/normalize-content.mjs && node scripts/ensure-unique-slugs.mjs",
-    "validate:data": "node scripts/validate-data.mjs"
+    "ingest": "node scripts/assemble-national.mjs && node scripts/ingest.mjs && node scripts/extra-sources.mjs && node scripts/correct-live-sources.mjs && node scripts/national-sources.mjs && node scripts/normalize-content.mjs && node scripts/ensure-unique-slugs.mjs",
+    "validate:data": "node scripts/validate-data.mjs",
+    "predev": "node scripts/assemble-national.mjs",
+    "prebuild": "node scripts/assemble-national.mjs",
+    "prelint": "node scripts/assemble-national.mjs"
   },
   "dependencies": {
     "cheerio": "1.1.2",

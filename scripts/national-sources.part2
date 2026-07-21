@@ -1,0 +1,137 @@
+{
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT);
+    try {
+      const response = await fetch(url, {
+        headers: { "user-agent": UA, accept: "text/html,application/json;q=0.9,*/*;q=0.7", "accept-language": "tr-TR,tr;q=0.9", "cache-control": "no-cache" },
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return await response.text();
+    } catch (error) {
+      lastError = error;
+      if (attempt < RETRIES) await sleep(650 * attempt);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastError;
+}
+
+async function fetchFirst(urls) {
+  let lastError;
+  for (const url of urls) {
+    try { return { text: await fetchText(url), url }; } catch (error) { lastError = error; }
+  }
+  throw lastError;
+}
+
+async function ingestKgmNational() {
+  const text = await fetchText(SOURCES.kgm);
+  const $ = cheerio.load(text);
+  const candidates = [];
+  $("table tr,li,p").each((_, element) => {
+    const value = clean($(element).text()).replace(/^\d+\s*/, "");
+    if (value.length >= 65 && /yol|otoyol|köprü|tünel|kavşa|trafik|şerit|ulaşım|kapalı|çalışma/i.test(value)) candidates.push(value);
+  });
+  const deduped = [...new Set(candidates)].filter((value) => inferProvinces(value).length || /TEM|TAG|Kuzey Marmara|Anadolu Otoyolu/i.test(value));
+  return deduped.slice(0, 80).map((body) => {
+    const provinces = inferProvinces(body);
+    const province = provinces[0] || "Türkiye";
+    const dates = parseDates(body);
+    const startsAt = recentOrFuture(dates[0], 60, 365) ? dates[0] : NOW_ISO;
+    const endsAt = recentOrFuture(dates[1], 60, 730) ? dates[1] : null;
+    const subtype = /trafiğe kapalı|trafiğe kapat|yol kapalı|ulaşıma kapalı/i.test(body) ? "road-closed" : "road-work";
+    return createItem({
+      sourceName: "Karayolları Genel Müdürlüğü",
+      sourceUrl: SOURCES.kgm,
+      type: "transport",
+      subtype,
+      title: `${province} yol durumu: ${sentence(body, 86)}`,
+      body,
+      province,
+      district: province,
+      startsAt,
+      endsAt,
+      tags: ["KGM", "yol durumu", "trafik", ...provinces],
+    });
+  }).filter(Boolean);
+}
+
+function parseMeteoLevel(value) {
+  const normalized = slugify(value);
+  if (/kirmizi|red|cok-tehlikeli/.test(normalized)) return "red";
+  if (/turuncu|orange|tehlikeli/.test(normalized)) return "orange";
+  if (/sari|yellow|az-tehlikeli|warning/.test(normalized)) return "yellow";
+  return null;
+}
+
+async function ingestMeteoWarnings() {
+  const pages = [
+    { url: SOURCES.mgmToday, dayOffset: 0, label: "bugün" },
+    { url: SOURCES.mgmTomorrow, dayOffset: 1, label: "yarın" },
+  ];
+  const best = new Map();
+  for (const page of pages) {
+    const text = await fetchText(page.url);
+    const $ = cheerio.load(text);
+    $("tr,li,a,div[class*='il'],div[class*='uyari']").each((_, element) => {
+      const node = $(element);
+      const visible = clean(node.text());
+      if (visible.length > 320) return;
+      const province = inferProvince(visible, "");
+      if (!province) return;
+      const attributes = [
+        node.attr("class"), node.attr("title"), node.attr("style"),
+        node.find("[class]").map((__, child) => $(child).attr("class")).get().join(" "),
+        node.find("img").map((__, image) => `${$(image).attr("alt") || ""} ${$(image).attr("title") || ""} ${$(image).attr("src") || ""}`).get().join(" "),
+      ].join(" ");
+      const level = parseMeteoLevel(`${attributes} ${visible}`);
+      if (!level) return;
+      const eventText = node.find("img").map((__, image) => clean(`${$(image).attr("alt") || ""} ${$(image).attr("title") || ""}`)).get().filter((value) => value && !/logo|ikon|image/i.test(value)).join(", ");
+      const existing = best.get(`${province}-${page.dayOffset}`);
+      const candidate = { province, level, eventText, ...page };
+      if (!existing || LEVEL_WEIGHT[level] > LEVEL_WEIGHT[existing.level]) best.set(`${province}-${page.dayOffset}`, candidate);
+    });
+  }
+  return [...best.values()].map((warning) => {
+    const day = new Date(NOW);
+    day.setDate(day.getDate() + warning.dayOffset);
+    const date = day.toLocaleDateString("en-CA", { timeZone: "Europe/Istanbul" });
+    const startsAt = `${date}T00:00:00+03:00`;
+    const endsAt = `${date}T23:59:00+03:00`;
+    const levelTr = warning.level === "red" ? "kırmızı" : warning.level === "orange" ? "turuncu" : "sarı";
+    const detail = warning.eventText ? ` Beklenen hadiseler: ${warning.eventText}.` : "";
+    return createItem({
+      sourceName: "Meteoroloji Genel Müdürlüğü - MeteoUYARI",
+      sourceUrl: warning.url,
+      type: "alert",
+      subtype: "meteo-warning",
+      title: `${warning.province} için ${warning.label} ${levelTr} meteorolojik uyarı`,
+      body: `MGM MeteoUYARI sisteminde ${warning.province} için ${warning.label} ${levelTr} uyarı seviyesi gösteriliyor.${detail} Güncel il ve ilçe ayrıntıları resmî kaynakta kontrol edilmelidir.`,
+      province: warning.province,
+      district: warning.province,
+      startsAt,
+      endsAt,
+      tags: ["MeteoUYARI", levelTr, "hava uyarısı"],
+    });
+  });
+}
+
+function afadDate(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+  const normalized = text.includes("T") ? text : text.replace(" ", "T");
+  const valueWithZone = /Z$|[+-]\d\d:\d\d$/.test(normalized) ? normalized : `${normalized}+03:00`;
+  const parsed = new Date(valueWithZone);
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
+}
+
+async function ingestAfadNational() {
+  const start = new Date(NOW.getTime() - 48 * 3600000).toISOString().slice(0, 19).replace("T", " ");
+  const end = NOW.toISOString().slice(0, 19).replace("T", " ");
+  const apiUrl = `${SOURCES.afadApi}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&minmag=2.5&orderby=timedesc&limit=100`;
+  try {
+    const text = await fetchText(apiUrl);
+    const json = JSON.parse(text);
+    const records = Array.is

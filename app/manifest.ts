@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
   return {
-    name: "Şehir Radar Live",
-    short_name: "Radar Live",
-    description: "Bursa kesinti, ulaşım, hava, afet, başvuru ve etkinliklerini resmî kaynaklardan takip eden canlı şehir veri merkezi.",
+    name: "Şehir Radar Türkiye",
+    short_name: "Şehir Radar",
+    description: "Türkiye'nin 81 ili için canlı şehir veri ağı.",
     start_url: `${basePath}/bugun`,
     scope: `${basePath}/`,
     display: "standalone",

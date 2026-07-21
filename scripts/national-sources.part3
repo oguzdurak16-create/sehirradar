@@ -1,0 +1,128 @@
+Array(json) ? json : Array.isArray(json?.data) ? json.data : [];
+    return records.slice(0, 60).map((record) => {
+      const magnitude = Number(record.magnitude ?? record.mag ?? record.ml);
+      const place = clean(record.location ?? record.place ?? record.description ?? "");
+      const province = clean(record.province ?? "") || inferProvince(place);
+      const district = clean(record.district ?? "") || place || province;
+      const occurredAt = afadDate(record.date ?? record.datetime ?? record.time);
+      if (!Number.isFinite(magnitude) || magnitude < 2.5 || !occurredAt) return null;
+      return createItem({
+        sourceName: "AFAD Son Depremler",
+        sourceUrl: SOURCES.afadHtml,
+        type: "alert",
+        subtype: "earthquake",
+        title: `M${magnitude.toFixed(1)} ${district} depremi`,
+        body: `AFAD kayıtlarına göre ${district} çevresinde ${magnitude.toFixed(1)} büyüklüğünde${record.depth ? `, ${record.depth} km derinlikte` : ""} deprem kaydedildi.`,
+        province,
+        district,
+        startsAt: occurredAt,
+        endsAt: occurredAt,
+        tags: ["deprem", `M${magnitude.toFixed(1)}`, place],
+      });
+    }).filter(Boolean);
+  } catch (apiError) {
+    const text = await fetchText(SOURCES.afadHtml);
+    const $ = cheerio.load(text);
+    const items = [];
+    $("table tbody tr,tr").each((_, row) => {
+      const cells = $(row).find("td").map((__, cell) => clean($(cell).text())).get();
+      if (cells.length < 7) return;
+      const [dateText, , , depthText, magnitudeType, magnitudeText, place] = cells;
+      const magnitude = Number(String(magnitudeText).replace(",", "."));
+      const occurredAt = afadDate(dateText);
+      if (!Number.isFinite(magnitude) || magnitude < 2.5 || !occurredAt || NOW.getTime() - new Date(occurredAt).getTime() > 48 * 3600000) return;
+      const province = inferProvince(place);
+      const item = createItem({
+        sourceName: "AFAD Son Depremler",
+        sourceUrl: SOURCES.afadHtml,
+        type: "alert",
+        subtype: "earthquake",
+        title: `M${magnitude.toFixed(1)} ${place} depremi`,
+        body: `AFAD kayıtlarına göre ${place} çevresinde ${magnitudeType || "ML"} ${magnitude.toFixed(1)} büyüklüğünde, ${depthText} km derinlikte deprem kaydedildi.`,
+        province,
+        district: place || province,
+        startsAt: occurredAt,
+        endsAt: occurredAt,
+        tags: ["deprem", `M${magnitude.toFixed(1)}`, place],
+      });
+      if (item) items.push(item);
+    });
+    if (!items.length) throw apiError;
+    return items.slice(0, 60);
+  }
+}
+
+function classifyGovernor(text) {
+  if (/deprem|sel|fırtına|yangın|heyelan|çığ|uyarı|tatil|olumsuz hava/i.test(text)) return ["alert", "governor-announcement"];
+  if (/yol|trafik|ulaşım|güzergah|kapan/i.test(text)) return ["transport", /kapan/i.test(text) ? "road-closed" : "road-work"];
+  if (/başvuru|destek|yardım|kurs|burs|hibe|personel/i.test(text)) return ["application", "social-support"];
+  if (/etkinlik|festival|sergi|konser|şenlik|tören/i.test(text)) return ["event", "event"];
+  return [null, null];
+}
+
+async function governorDirectory() {
+  const text = await fetchText(SOURCES.governors);
+  const $ = cheerio.load(text);
+  const map = new Map();
+  $("a[href]").each((_, anchor) => {
+    const node = $(anchor);
+    const label = clean(`${node.attr("title") || ""} ${node.text()}`);
+    const province = inferProvince(label, "");
+    const href = node.attr("href");
+    if (!province || !href) return;
+    let url;
+    try { url = new URL(href, SOURCES.governors).href; } catch { return; }
+    if (!/\.gov\.tr(?:\/|$)/i.test(url) || /icisleri\.gov\.tr/i.test(new URL(url).hostname)) return;
+    if (!map.has(province)) map.set(province, url.replace(/\/+$/, ""));
+  });
+  return map;
+}
+
+async function ingestGovernorRotation() {
+  const directory = await governorDirectory();
+  const rotationSize = 18;
+  const seed = (NOW.getUTCDate() * 24 + NOW.getUTCHours()) * rotationSize;
+  const selected = Array.from({ length: rotationSize }, (_, index) => PROVINCES[(seed + index) % PROVINCES.length][0]);
+  const items = [];
+  const failures = [];
+  for (const province of selected) {
+    const base = directory.get(province);
+    if (!base) { failures.push(`${province}: adres bulunamadı`); continue; }
+    try {
+      const { text, url: pageUrl } = await fetchFirst([`${base}/duyurular`, `${base}/haberler`, base]);
+      const $ = cheerio.load(text);
+      const provinceItems = [];
+      const seen = new Set();
+      $("a[href]").each((_, anchor) => {
+        if (provinceItems.length >= 4) return;
+        const node = $(anchor);
+        const title = clean(node.attr("title") || node.find("h1,h2,h3,h4,h5,strong").first().text() || node.text());
+        if (title.length < 12 || title.length > 170 || /kurumsal|iletişim|galeri|mevzuat|anasayfa|tüm haberler/i.test(title)) return;
+        const block = node.closest("article,li,.item,.card,.news,.duyuru").length ? node.closest("article,li,.item,.card,.news,.duyuru") : node.parent();
+        const body = clean(block.text()) || title;
+        const [type, subtype] = classifyGovernor(`${title} ${body}`);
+        if (!type) return;
+        const dates = parseDates(body);
+        const startsAt = dates[0];
+        if (!recentOrFuture(startsAt, 7, 60)) return;
+        const href = node.attr("href");
+        if (!href || href.startsWith("javascript:")) return;
+        let sourceUrl;
+        try { sourceUrl = new URL(href, pageUrl).href; } catch { return; }
+        if (!/\.gov\.tr(?:\/|$)/i.test(sourceUrl)) return;
+        const key = `${title}|${sourceUrl}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const item = createItem({
+          sourceName: `${province} Valiliği`,
+          sourceUrl,
+          type,
+          subtype,
+          title: `${province} Valiliği: ${title}`,
+          body,
+          province,
+          district: province,
+          startsAt,
+          endsAt: dates[1] || null,
+          tags: ["valilik", "resmî duyuru"],
+        });

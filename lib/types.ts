@@ -9,6 +9,7 @@ export interface RadarItem {
   title: string;
   summary: string;
   body: string;
+  province?: string;
   district: string;
   neighborhoods: string[];
   startsAt: string | null;
@@ -26,6 +27,7 @@ export interface RadarItem {
 export interface RadarData {
   generatedAt: string;
   city: string;
+  country?: string;
   items: RadarItem[];
   reviewQueue: RadarItem[];
 }
