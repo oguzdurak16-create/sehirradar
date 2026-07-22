@@ -1,8 +1,6 @@
 name: Canlı şehir verisi ve GitHub Pages yayını
 
 on:
-  schedule:
-    - cron: "13,43 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
