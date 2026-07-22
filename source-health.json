@@ -1,0 +1,187 @@
+{
+  "generatedAt": "2026-07-22T08:32:50.964Z",
+  "totalSources": 16,
+  "healthySources": 14,
+  "sources": [
+    {
+      "name": "Bursa Büyükşehir Belediyesi duyuruları",
+      "sourceName": "Bursa Büyükşehir Belediyesi",
+      "url": "https://bapi.bursa.bel.tr/apigateway/acikveri/duyuru",
+      "ok": true,
+      "count": 1,
+      "durationMs": 1249,
+      "checkedAt": "2026-07-22T08:32:30.007Z",
+      "error": null
+    },
+    {
+      "name": "Bursa Büyükşehir Belediyesi etkinlikleri",
+      "sourceName": "Bursa Büyükşehir Belediyesi",
+      "url": "https://www.bursa.bel.tr/etkinlik",
+      "ok": true,
+      "count": 10,
+      "durationMs": 1565,
+      "checkedAt": "2026-07-22T08:32:30.007Z",
+      "error": null
+    },
+    {
+      "name": "BUSKİ su kesintileri",
+      "sourceName": "BUSKİ",
+      "url": "https://www.buski.gov.tr/gunluk-su-kesintileri",
+      "ok": false,
+      "count": 0,
+      "durationMs": 4120,
+      "checkedAt": "2026-07-22T08:32:30.007Z",
+      "error": "fetch failed"
+    },
+    {
+      "name": "UEDAŞ elektrik kesintileri",
+      "sourceName": "UEDAŞ",
+      "url": "https://www.uedas.com.tr/tr/kesintiler",
+      "ok": true,
+      "count": 0,
+      "durationMs": 1827,
+      "checkedAt": "2026-07-22T08:32:30.007Z",
+      "error": null
+    },
+    {
+      "name": "BURULAŞ ulaşım duyuruları",
+      "sourceName": "BURULAŞ",
+      "url": "https://www.burulas.com.tr/",
+      "ok": true,
+      "count": 4,
+      "durationMs": 960,
+      "checkedAt": "2026-07-22T08:32:30.007Z",
+      "error": null
+    },
+    {
+      "name": "Bursa Valiliği duyuruları",
+      "sourceName": "T.C. Bursa Valiliği",
+      "url": "https://www.bursa.gov.tr/",
+      "ok": true,
+      "count": 0,
+      "durationMs": 2630,
+      "checkedAt": "2026-07-22T08:32:30.007Z",
+      "error": null
+    },
+    {
+      "name": "BUDO iptal seferleri",
+      "sourceName": "BUDO",
+      "url": "https://budo.burulas.com.tr/tr/Budo/CancelledVoyages",
+      "ok": true,
+      "count": 0,
+      "durationMs": 899,
+      "checkedAt": "2026-07-22T08:32:42.565Z",
+      "error": null
+    },
+    {
+      "name": "BUDO duyuru ve ek seferleri",
+      "sourceName": "BUDO",
+      "url": "https://budo.burulas.com.tr/tr/Budo/AllAnnouncements",
+      "ok": true,
+      "count": 0,
+      "durationMs": 222,
+      "checkedAt": "2026-07-22T08:32:42.565Z",
+      "error": null
+    },
+    {
+      "name": "MGM Bursa saatlik hava",
+      "sourceName": "Meteoroloji Genel Müdürlüğü",
+      "url": "https://www.mgm.gov.tr/tahmin/saatlik.aspx?m=BURSA",
+      "ok": true,
+      "count": 2,
+      "durationMs": 1130,
+      "checkedAt": "2026-07-22T08:32:50.112Z",
+      "error": null
+    },
+    {
+      "name": "KGM Bursa yol durumu",
+      "sourceName": "Karayolları Genel Müdürlüğü",
+      "url": "https://www.kgm.gov.tr/Sayfalar/KGM/SiteTr/YolDanisma/GunlukYolDurumuBulteni.aspx",
+      "ok": true,
+      "count": 0,
+      "durationMs": 1380,
+      "checkedAt": "2026-07-22T08:32:42.565Z",
+      "error": null
+    },
+    {
+      "name": "Bursa AFAD duyuruları",
+      "sourceName": "Bursa AFAD",
+      "url": "https://bursa.afad.gov.tr/duyurular",
+      "ok": true,
+      "count": 0,
+      "durationMs": 1525,
+      "checkedAt": "2026-07-22T08:32:42.565Z",
+      "error": null
+    },
+    {
+      "name": "AFAD Bursa bölgesi depremleri",
+      "sourceName": "AFAD Son Depremler",
+      "url": "https://deprem.afad.gov.tr/sondepremler",
+      "ok": true,
+      "count": 0,
+      "durationMs": 2206,
+      "checkedAt": "2026-07-22T08:32:42.565Z",
+      "error": null
+    },
+    {
+      "name": "KGM Türkiye yol durumu",
+      "sourceName": "Karayolları Genel Müdürlüğü",
+      "url": "https://www.kgm.gov.tr/Sayfalar/KGM/SiteTr/YolDanisma/GunlukYolDurumuBulteni.aspx",
+      "ok": true,
+      "count": 9,
+      "durationMs": 1016,
+      "checkedAt": "2026-07-22T08:32:50.964Z",
+      "error": null
+    },
+    {
+      "name": "MGM Türkiye MeteoUYARI",
+      "sourceName": "Meteoroloji Genel Müdürlüğü - MeteoUYARI",
+      "url": "https://www.mgm.gov.tr/meteouyari/turkiye.aspx?Gun=1",
+      "ok": true,
+      "count": 0,
+      "durationMs": 1467,
+      "checkedAt": "2026-07-22T08:32:50.964Z",
+      "error": null
+    },
+    {
+      "name": "AFAD Türkiye son depremler",
+      "sourceName": "AFAD Son Depremler",
+      "url": "https://deprem.afad.gov.tr/sondepremler",
+      "ok": true,
+      "count": 9,
+      "durationMs": 2198,
+      "checkedAt": "2026-07-22T08:32:50.964Z",
+      "error": null
+    },
+    {
+      "name": "81 İl Valilik rotasyonu",
+      "sourceName": "Türkiye Valilikleri",
+      "url": "https://www.icisleri.gov.tr/valilikler",
+      "ok": false,
+      "count": 0,
+      "durationMs": 1818,
+      "checkedAt": "2026-07-22T08:32:50.964Z",
+      "error": "Balıkesir: adres bulunamadı | Bilecik: adres bulunamadı | Bingöl: adres bulunamadı | Bitlis: adres bulunamadı | Bolu: adres bulunamadı | Burdur: adres bulunamadı",
+      "checkedProvinces": [
+        "Balıkesir",
+        "Bilecik",
+        "Bingöl",
+        "Bitlis",
+        "Bolu",
+        "Burdur",
+        "Bursa",
+        "Çanakkale",
+        "Çankırı",
+        "Çorum",
+        "Denizli",
+        "Diyarbakır",
+        "Edirne",
+        "Elazığ",
+        "Erzincan",
+        "Erzurum",
+        "Eskişehir",
+        "Gaziantep"
+      ]
+    }
+  ]
+}

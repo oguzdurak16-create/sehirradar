@@ -1,0 +1,6 @@
+User-Agent: *
+Allow: /
+Disallow: /api/
+
+Host: https://oguzdurak16-create.github.io/sehirradar
+Sitemap: https://oguzdurak16-create.github.io/sehirradar/sitemap.xml

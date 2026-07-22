@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Bursa ve Uludağ editoryal panoraması</title>
+  <desc id="desc">Uludağ silueti, Bursa çatıları, tarihi kubbeler, minareler ve yeşil dokudan oluşan özgün vektör illüstrasyon.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e5b27f"/>
+      <stop offset=".45" stop-color="#eec9a1"/>
+      <stop offset="1" stop-color="#f3dbc0"/>
+    </linearGradient>
+    <linearGradient id="mountain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#586f61"/>
+      <stop offset="1" stop-color="#2c4638"/>
+    </linearGradient>
+    <linearGradient id="city" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9c563c"/>
+      <stop offset="1" stop-color="#6e3427"/>
+    </linearGradient>
+    <filter id="grain" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="12" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="gray"/>
+      <feComponentTransfer in="gray" result="softNoise">
+        <feFuncA type="table" tableValues="0 .08"/>
+      </feComponentTransfer>
+      <feBlend in="SourceGraphic" in2="softNoise" mode="multiply"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#sky)"/>
+  <circle cx="1260" cy="185" r="92" fill="#f3d99f" opacity=".8"/>
+  <path d="M0 330C150 280 250 300 390 360C560 260 700 255 850 340C1030 235 1210 250 1600 355V0H0Z" fill="#f5e5ce" opacity=".38"/>
+
+  <path d="M0 515L170 450L300 480L485 365L620 410L790 300L920 362L1085 265L1250 350L1405 310L1600 420V650H0Z" fill="url(#mountain)"/>
+  <path d="M445 389L486 365L520 378L493 402Z" fill="#f4e8d7" opacity=".9"/>
+  <path d="M748 326L790 300L838 326L805 341Z" fill="#f4e8d7" opacity=".95"/>
+  <path d="M1040 292L1085 265L1130 295L1095 309Z" fill="#f4e8d7" opacity=".95"/>
+  <path d="M1367 333L1405 310L1447 335L1415 346Z" fill="#f4e8d7" opacity=".9"/>
+  <path d="M0 574C245 502 450 548 670 582C910 618 1160 520 1600 548V720H0Z" fill="#3c5a48"/>
+  <path d="M0 625C250 575 465 628 705 650C1010 678 1265 585 1600 615V760H0Z" fill="#2d4939"/>
+
+  <g opacity=".96">
+    <path d="M0 725L110 690L190 715L265 655L350 705L450 630L545 690L635 650L720 712L820 645L925 705L1030 635L1135 695L1240 642L1335 705L1450 655L1600 710V1000H0Z" fill="#8b4935"/>
+    <path d="M0 770L115 732L228 765L330 705L430 760L535 700L645 760L760 705L865 770L980 700L1090 762L1215 705L1320 765L1445 710L1600 760V1000H0Z" fill="url(#city)"/>
+  </g>
+
+  <g fill="#f2d1ab" stroke="#6a3729" stroke-width="8">
+    <path d="M235 745H425V930H235Z"/>
+    <path d="M1030 720H1270V930H1030Z"/>
+    <path d="M650 735H875V930H650Z"/>
+  </g>
+  <g fill="#d88758">
+    <path d="M215 750L330 670L445 750Z"/>
+    <path d="M1005 727L1150 635L1295 727Z"/>
+    <path d="M625 742L760 652L900 742Z"/>
+  </g>
+
+  <g fill="#e9c79f" stroke="#654033" stroke-width="8">
+    <path d="M485 810C485 740 545 690 615 690C685 690 745 740 745 810V930H485Z"/>
+    <path d="M110 825C110 775 150 735 200 735C250 735 290 775 290 825V930H110Z"/>
+  </g>
+  <g fill="#a8583c" stroke="#654033" stroke-width="7">
+    <path d="M495 803C505 738 555 708 615 708C675 708 725 738 735 803Z"/>
+    <path d="M118 820C125 775 160 750 200 750C240 750 275 775 282 820Z"/>
+  </g>
+  <g fill="#f0d4ae" stroke="#654033" stroke-width="7">
+    <path d="M558 643H576V930H558Z"/>
+    <path d="M661 630H679V930H661Z"/>
+    <path d="M152 684H169V930H152Z"/>
+  </g>
+  <g fill="#694137">
+    <path d="M550 643L567 593L584 643Z"/>
+    <path d="M653 630L670 578L687 630Z"/>
+    <path d="M145 684L160 638L176 684Z"/>
+  </g>
+
+  <g fill="#214334">
+    <circle cx="70" cy="770" r="70"/>
+    <circle cx="1480" cy="770" r="92"/>
+    <circle cx="1385" cy="815" r="78"/>
+    <circle cx="935" cy="825" r="62"/>
+    <circle cx="455" cy="842" r="75"/>
+  </g>
+  <g fill="#496d55">
+    <circle cx="40" cy="818" r="55"/>
+    <circle cx="1518" cy="846" r="65"/>
+    <circle cx="1335" cy="855" r="48"/>
+    <circle cx="914" cy="862" r="42"/>
+    <circle cx="405" cy="874" r="48"/>
+  </g>
+
+  <rect y="928" width="1600" height="72" fill="#1f382d"/>
+  <g filter="url(#grain)" opacity=".45">
+    <rect width="1600" height="1000" fill="#7a4b35" opacity=".13"/>
+  </g>
+</svg>
